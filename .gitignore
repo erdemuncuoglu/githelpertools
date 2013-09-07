@@ -1,0 +1,7 @@
+/.settings
+/.buildpath
+/.project
+
+/log/*
+/repolist/*
+!/repolist/sample.repo.list
