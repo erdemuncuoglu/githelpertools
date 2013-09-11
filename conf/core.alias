@@ -1,0 +1,8 @@
+k=!gitk --all
+ci=commit
+fa=fetch --all
+pom=pull origin master
+co=checkout
+update=true
+cd=true
+new=true

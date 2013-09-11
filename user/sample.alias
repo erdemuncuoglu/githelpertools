@@ -1,0 +1,7 @@
+# Sample Alias File
+#
+# Each alias file must have extension '.alias'.
+# Empty lines and lines statring with a # sign are considered as a comment line (like this one) and ignored.
+# Alias definitions are same as GIT alias definition except no whitespaces around '=' character.
+#
+# e.g. Take a look at 'conf/core.alias' for a real example

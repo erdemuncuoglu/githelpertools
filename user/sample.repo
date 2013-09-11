@@ -1,0 +1,22 @@
+# Sample Repository List File
+#
+# Each repository list file must have extension '.repo'.
+# Empty lines and lines statring with a # sign are considered as a comment line (like this one) and ignored.
+#
+# First non comment line must be an absolute path of a folder holding repositories listed afterwards.
+# A valid repository definition should be like : 
+#     <alias>=<repository_folder>
+#
+# e.g. If some repos filed under '/path/to/repo/dir' are 'githelpertools', 'work_project_1', 'phpmyadmin'
+# then repository list file contents shall be nearly:  
+#
+#     /path/to/repo/dir
+#     wp1=work_project_1
+#     helper=githelpertools
+#     myad=phpmyadmin
+#
+# To switch to a repo just run command :
+#     git cd <alias>
+#
+# From previous example calling 'git cd helper' will change your working dir to '/path/to/repo/dir/githelpertools' 
+# and run command 'git fetch --all' afterwards. 

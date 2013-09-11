@@ -2,6 +2,7 @@
 /.buildpath
 /.project
 
-/log/*
-/repolist/*
-!/repolist/sample.repo.list
+/log
+/user/*
+!/user/sample.repo
+!/user/sample.alias
