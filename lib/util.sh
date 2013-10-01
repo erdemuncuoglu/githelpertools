@@ -22,142 +22,65 @@
 ###########################################################################
 
 
-tool_name="gitHelperTools"
-tool_version=$(cat $self_dir/VERSION)
-
-# usage __split variable index delimiter
-__split()
+# Returns argument at <index>
+# Usage _ght_nthparam index args...
+_ght_nthparam()
 {
-	local list
-	local ind
-	local sep
-	local pos
-	
-	[ -z "$1" ] && return 1 || list="$1"
-	[ -z "$2" ] && ind="1" || ind="$2"
-	[ -z "$3" ] && sep="=" || sep="$3" 
-	
-	#pos=`__strindex "$list" "$sep"`
-	#[ $pos -eq -1 ] && return 1
-	
-	#[ $ind -eq 1 ] && echo ${list:0:$pos} || echo ${list:$((pos + 2))}
-	echo $list | cut -d $sep -f $ind
+	local ind=$1
+	shift
+	echo ${@:$1:1}
 	return 0
 }
 
-# usage __strindex string substring
-__strindex()
-{
-	x="${1%%$2*}"
-	[[ "$x" = "$1" ]] && echo -1 || echo ${#x}
-}
-
-# usage __rpad string length padchar
-__rpad()
-{
-	__pad "$1" "$2" right "$3"
-	return $?
-}
-
-# usage __lpad string length padchar
-__lpad()
-{
-	__pad "$1" "$2" left "$3"
-	return $?
-}
-
-# usage __pad string length direction padchar
-__pad()
-{
-	local str="$1"
-	local length="$2"
-	local dir="$3"
-	local pchr
-	local pstr
-	local ec=1
-	
-	[ $# -lt 3 ] && return $ec
-	[ -z $4 ] && pchr=" " || pchr="$4"
-	pstr=`__repeat "$((length - ${#str}))" "$pchr"`
-	if [ "$dir" == "left" ]; then
-		echo "$pstr$str"
-		ec=0
-	fi
-	if [ "$dir" == "right" ]; then
-		echo "$str$pstr"
-		ec=0
-	fi
-	return $ec
-}
-
-# usage __repeat length char
-__repeat()
-{
-	local length
-	local char
-	local str
-	
-	[ -z "$1" ] && return 1 || length="$1"
-	[ $length -lt 1 ] && return 1
-	[ -z "$2" ] && char=" " || char="$2"
-	
-	str=`printf "%*s" $length`
-	echo "${str// /$char}"
-}
-
-# usage __nthparam paramindex params...
-__nthparam()
-{
-	#TODO
-	local ind=$1
-	shift
-	local params=$@
-}
-
-# usage __lastparam params...
-__lastparam()
+# Returns last in <args...>
+# Usage _ght_lastparam args...
+_ght_lastparam()
 {
 	local len=$#
 	
 	[ $len -eq 0 ] && return 1
-	while [ $len -gt 1 ]; do
+	while [ $len -gt 1 ]
+	do
 		shift
 	done
 	echo $1
 	return 0
 }
 
-# usage __touch (same parameters as touch command.)
+# Enhanced version of command touch
 # Try `touch --help' for more information.
-__touch()
+# Usage _ght_touch <args...> 
+_ght_touch()
 {
 	local params="$@"
-	local file=`__lastparam $params`
+	local file=`_ght_lastparam $params`
 	
 	[ -e $file ] && return 1
 	touch $params &> /dev/null && return 0
-	__mkdir `dirname "$file"`
+	_ght_mkdir `dirname "$file"`
 	[ $? -eq 0 ] && touch $params || return 1
 	return $?
 }
 
-# usage __mkdir dirname
-__mkdir()
+# Ehanced version of command mkdir
+# Usage _ght_mkdir dirname
+_ght_mkdir()
 {
 	local dir="$1"
 	
 	[ -z $dir -o $dir == "." -o $dir == "/" -o -e $dir ] && return 1
 	mkdir $dir &> /dev/null
 	[ $? -eq 0 ] && return 0
-	__mkdir `dirname "$dir"`
+	_ght_mkdir `dirname "$dir"`
 	[ $? -ne 0 ] && return 1
 	mkdir $dir
 	return $?
 }
 
-# usage __vercomp version1 version2
-# source <http://stackoverflow.com/a/4025065>
-__vercomp()
+# Compares two version strings
+# Original source <http://stackoverflow.com/a/4025065>
+# Usage _ght_vercomp version1 version2
+_ght_vercomp()
 {
 	if [[ $1 == $2 ]]; then
 		return 0
@@ -190,8 +113,9 @@ __vercomp()
 	return 0
 }
 
-# usage __checkversion [-v|--verbose] branch
-__checkversion()
+# Checks githelpertools version on <branch>
+# Usage _ght_checkversion [-v|--verbose] branch
+_ght_checkversion()
 {
 	local verbose="false"
 	local branch="master"
@@ -204,11 +128,64 @@ __checkversion()
 	fi
 	[ -n "$1" ] && branch="$1"
 	
-	new_version=$(wget -qO- --no-check-certificate https://raw.github.com/erdemuncuoglu/githelpertools/$branch/VERSION 2> /dev/null)
-	__vercomp $tool_version $new_version
+	#new_version=$(wget -qO- --no-check-certificate https://raw.github.com/erdemuncuoglu/githelpertools/$branch/VERSION 2> /dev/null)
+	new_version=$(_ght_geturl https://raw.github.com/erdemuncuoglu/githelpertools/$branch/VERSION)
+	_ght_vercomp $_ght_version $new_version
 	ec=$?
 	if [ $verbose == "true" ]; then
 		[ $ec -eq 2 ] && echo "New version $new_version is available."
 	fi
 	return $ec
+}
+
+# Downloads <url> to <file> or to stdout with wget or curl
+# Usage _ght_geturl url file
+_ght_geturl()
+{
+	local ec
+	local temp_dir_list="/tmp $TMP $TEMP"
+	local temp_file
+	local url=$1
+	local out_file=$2
+	
+	[ -z $url ] && return 1
+	
+	for item in $temp_dir_list
+	do
+		if [ -d "$item" ]; then
+			temp_file=$item/`_ght_rndstr`
+			break
+		fi
+	done
+	[ -z $temp_file ] && return 1
+	
+	if [ `type -fp wget` ]; then
+		wget -qO $temp_file --no-check-certificate $url 2> /dev/null
+	elif [ `type -fp curl` ]; then
+		curl -so $temp_file --insecure $url 2> /dev/null
+	else
+		return 1
+	fi
+	
+	if [[ -n $out_file && $out_file != "-" ]]; then
+		cp -f $temp_file $out_file
+		ec=$?
+	else
+		cat $temp_file
+		ec=$?
+	fi
+	
+	rm -f $temp_file
+	return $ec
+}
+
+# Registers core modules and user plugins
+# Usage _ght_register module_name
+_ght_register()
+{
+	local reg_name=${1%.*}
+	
+	git config --unset-all alias.$reg_name 2> /dev/null
+	git config --global alias.$reg_name ght_$reg_name
+	return 0
 }

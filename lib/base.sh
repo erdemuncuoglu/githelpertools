@@ -22,42 +22,15 @@
 ###########################################################################
 
 
-function _ght_gitupd() {
+#TODO:2013-09-30:erdem:Read conf files
 
-	curbranch=`git branch | grep "*" | sed "s/* //"`
-	
-	branches=`git branch | sed "s/* //"`
-	lines=`wc -l <<< "$branches"`
-	lines=`echo $lines | sed "s/	//"`
-	
-	ind=1
-	while read branch
-	do
-	
-		echo -e "\e[01mBranch :\e[0m \e[44m$branch\e[0m \e[41m($ind/$lines)\e[0m"
-		git checkout $branch &> /dev/null
-		ec=$?
-		if [[ $ec -eq 0 ]]; then
-			git pull origin master
-			ec=$?
-			if [[ $ec -eq 0 ]]; then
-				if [[ $1 == "-f" || $1 == "-p" && $branch != master ]]; then
-					git push origin $branch
-				else
-					echo -e "\e[5;31mSkipping\e[0m git push origin $branch"
-				fi
-			else
-				echo -e "\e[5;31mError $ec\e[0m at git pull origin master"
-			fi
-		else
-			echo -e "\e[5;31mError $ec\e[0m at git checkout $branch"
-		fi
-		echo "------------------------------------------------------------------------------"
-		
-		ind=$(( ind + 1 ))
-	done <<< "$branches"
-	
-#	echo -e "\e[01mBranch :\e[0m \e[44m$curbranch\e[0m"
-	git checkout $curbranch &> /dev/null
-	return 0
-}
+_ght_name="gitHelperTools"
+_ght_version=$(cat $self_dir/VERSION)
+
+for lib_file in $(ls $self_dir/lib/*.sh 2> /dev/null)
+do
+	if [ "$lib_file" != "${BASH_SOURCE[0]}" ]; then
+		source $lib_file
+	fi
+done
+unset lib_file

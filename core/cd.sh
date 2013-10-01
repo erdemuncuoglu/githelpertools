@@ -22,30 +22,34 @@
 ###########################################################################
 
 
-__gitcd()
+# Register module/plugin
+_ght_register "`basename ${BASH_SOURCE[0]}`"
+
+_ght_cd()
 {
-	if [ $# -eq 0 ]; then
-		git fetch --all
-		return 0
-	fi
-	
-	#local BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	local public_args="-l --list -r --reload"
+	local priv_args="--complete --args"
 	local repo_list=$self_dir/user
 	local repo_base=""
 	local oldIFS="$IFS"
 	
-	for repo_file in $(ls $repo_list/*.repo); do
-		
+	if [ $# -eq 0 ]; then
+		pwd
+		return 0
+	fi
+	
+	for repo_file in $(ls $repo_list/*.repo 2> /dev/null)
+	do
 		#repo_file="$file"
-		while read line; do
-			
+		while read line
+		do
 			[ "${line:0:1}" == "#" ] && continue
-			
+
 			if [ -z $repo_base ]; then
-				
+
 				if [ "${line:0:1}" == "/" -o "${line:0:1}" == "~" ]; then
 					repo_base="$line"
-					
+
 					if [ x"$1" == "x--list" -o x"$1" == "x-l" ]; then
 						echo
 						echo -e "Repo dir : "$repo_base
@@ -55,16 +59,20 @@ __gitcd()
 				fi
 				continue
 			fi
-			
+
 			if [[ "$line" != *=* ]]; then
 				continue
 			fi
-			
-			key=`__split $line 1`
-			val=`__split $line 2`
-			if [ x"$1" == "x--list" -o x"$1" == "x-l" ]; then
+
+			key=`_ght_split $line 0`
+			val=`_ght_split $line 1`
+			if [ x"$1" == "x--list" -o x"$1" == "x-l" -o x"$1" == "x--complete" ]; then
 				IFS="■"
-				echo -e "    "`__rpad $key 12`"  "$val
+				if [ x"$1" == "x--complete" ]; then
+					echo -e "	$key	"
+				else
+					echo -e "    "`_ght_rpad $key 12`"  "$val
+				fi
 				IFS="$oldIFS"
 			elif [ x"$1" == x"$key" ]; then
 				cd $repo_base/$val || return 1
@@ -72,7 +80,7 @@ __gitcd()
 				return 0
 			elif [ x"$1" == "x--backup" ]; then
 				if [ ! -d $BACKUP_BASE/$val ]; then
-					__mkdir $BACKUP_BASE/$val
+					_ght_mkdir $BACKUP_BASE/$val
 				fi
 				cp -fv $repo_base/$val/.classpath $BACKUP_BASE/$val/
 				return 0
@@ -80,7 +88,30 @@ __gitcd()
 		done < $repo_file
 		repo_base=""
 	done
-	
-	[ x"$1" != "x--list" -a x"$1" != "x-l" -a x"$1" != "x--backup" ] && cd "$1"
+
+	[ x"$1" != "x--list" -a x"$1" != "x-l" -a x"$1" != "x--backup" -a x"$1" != "x--complete" ] && cd "$1"
 	return $?
+}
+
+_git_ght_cd()
+{
+	local cur
+	local prev
+	local params="-l --list"
+	
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD - 1]}
+
+	if [ "$prev" == "cd" ]; then
+
+		case "$cur" in
+		-*)
+			__gitcomp "$params"
+			;;
+		*)
+			__gitcomp "$(_ght_cd --complete)"
+			;;
+		esac
+	fi
+	return 0
 }

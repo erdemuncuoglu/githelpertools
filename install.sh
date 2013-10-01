@@ -21,6 +21,7 @@
 #                                                                         #
 ###########################################################################
 
+
 echo "Preparing Installer..."
 
 self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,43 +29,49 @@ self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 git_completion=
 git_prompt=
 
+[ -f $self_dir/lib/base.sh ] && . $self_dir/lib/base.sh || exit 1
+
 if [ `uname -s | grep -i "mingw"` ]; then
-	if [ ! `type -fp wget` ]; then
-		cp -f $self_dir/extension/wget/bin/* /bin/
-		cp -f $self_dir/extension/wget/etc/* /etc/
-	fi
-	wget --no-check-certificate -qO /etc/git-prompt.sh https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh 2> /dev/null
-	wget --no-check-certificate -qO /etc/git-completion.bash https://raw.github.com/git/git/master/contrib/completion/git-completion.bash 2> /dev/null
+	#if [ ! `type -fp wget` ]; then
+		#cp -f $self_dir/extension/wget/bin/* /bin/
+		#cp -f $self_dir/extension/wget/etc/* /etc/
+	#fi
+	#wget --no-check-certificate -qO /etc/git-prompt.sh https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh 2> /dev/null
+	#wget --no-check-certificate -qO /etc/git-completion.bash https://raw.github.com/git/git/master/contrib/completion/git-completion.bash 2> /dev/null
+	_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh /etc/git-prompt.sh
+	_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-completion.bash /etc/git-completion.bash
 elif [ `uname -s | grep -i "darwin"` ]; then
 	# TODO MAC OS implementation assigned to Mert KAYA
 	false
 else
-	wget --no-check-certificate -qO $HOME/git-prompt.sh https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh 2> /dev/null
-	wget --no-check-certificate -qO $HOME/git-completion.sh https://raw.github.com/git/git/master/contrib/completion/git-completion.bash 2> /dev/null
+	#wget --no-check-certificate -qO $HOME/git-prompt.sh https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh 2> /dev/null
+	#wget --no-check-certificate -qO $HOME/git-completion.sh https://raw.github.com/git/git/master/contrib/completion/git-completion.bash 2> /dev/null
+	_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh $HOME/git-prompt.sh
+	_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-completion.bash $HOME/git-completion.sh
 	git_completion="git-completion.sh"
 	git_prompt="git-prompt.sh"
 fi
 
-[ -f $self_dir/lib/common.sh ] && . $self_dir/lib/common.sh || exit 1
-
 # TODO on MAC use .profile instead .bashrc
 bash_rc="$HOME/.bashrc"
 temp_rc="$HOME/temp.bashrc"
-inst_line="source $self_dir/githelper.sh # $tool_name v$tool_version"
-alias_file="$self_dir/conf/core.alias"
+inst_line="source $self_dir/githelper.sh # $_ght_name v$_ght_version"
+alias_list="$self_dir/conf/core.alias $(ls $self_dir/user/*.alias 2> /dev/null)"
 
-[ x"$1" == x--update ] && echo "  Updating to v$tool_version" || echo "  Installing $tool_name v$tool_version"
+[ x"$1" == x--update ] && echo "  Updating to v$_ght_version" || echo "  Installing $_ght_name v$_ght_version"
 [ -e $temp_rc ] && rm -f $temp_rc
-[ ! -e $bash_rc ] && __touch $bash_rc
+[ ! -e $bash_rc ] && _ght_touch $bash_rc
 
 if [ -w $bash_rc ]; then
 	ta=`date +%s`
 	echo "  Updating $bash_rc"
 	cp $bash_rc $bash_rc~
-	__touch $temp_rc
-	while read -r line; do
+	_ght_touch $temp_rc
+	while read -r line
+	do
 		ignore="false"
-		for skipstr in $git_completion $git_prompt $tool_name; do
+		for skipstr in $git_completion $git_prompt $_ght_name
+		do
 			if [[ "$line" == *"$skipstr"* ]]; then
 				ignore="true"
 				break
@@ -79,19 +86,22 @@ if [ -w $bash_rc ]; then
 	rm -f $temp_rc
 	
 	echo "  Updating git aliases"
-	while read -r git_alias; do
-
-		alias_name=`__split "$git_alias" 1`
-		alias_cmd=`__split "$git_alias" 2`
-
-		git config --global --unset-all alias.$alias_name
-		if [ "$alias_cmd" != "false" ]; then
-			git config --global alias.$alias_name "$alias_cmd" 
-			echo -n "    alias $alias_name"
-			[ "$alias_cmd" != "true" ] && echo -n " = $alias_cmd"
-			echo
-		fi
-	done < $alias_file
+	for alias_file in $alias_list
+	do
+		while read -r git_alias
+		do
+			alias_name=$(_ght_trim `_ght_split "$git_alias" 0`)
+			alias_cmd=$(_ght_trim `_ght_split "$git_alias" 1`)
+	
+			git config --global --unset-all alias.$alias_name
+			if [ "$alias_cmd" != "false" ]; then
+				git config --global alias.$alias_name "$alias_cmd" 
+				echo -n "    alias $alias_name"
+				[ "$alias_cmd" != "true" ] && echo -n " = $alias_cmd"
+				echo
+			fi
+		done < $alias_file
+	done
 	tb=`date +%s`
 	echo "Completed in $((tb - ta))s."
 	echo

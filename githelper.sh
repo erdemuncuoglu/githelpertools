@@ -21,46 +21,56 @@
 #                                                                         #
 ###########################################################################
 
+
 git_cmd=`type -fp git`
 if [ ! -x $git_cmd ]; then
 	echo "Cannot find GIT..."
-	exit 2
+	return 2
 fi
 
 self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-[ -f $self_dir/lib/common.sh ] && . $self_dir/lib/common.sh || exit 1
+[ -f $self_dir/lib/base.sh ] && . $self_dir/lib/base.sh || return 1
 
-#TODO load core modules and plugins dynamically
-[ -f $self_dir/core/cd.sh ] && . $self_dir/core/cd.sh
-#[ -f $self_dir/upd.sh ] && . $self_dir/upd.sh
+for plugin_file in $(ls $self_dir/plugins/*.sh 2> /dev/null)
+do
+	source $plugin_file
+done
+
+for core_file in $(ls $self_dir/core/*.sh 2> /dev/null)
+do
+	source $core_file
+done
+
 
 log_file=$self_dir/log/githelper.log
-__touch $log_file
+_ght_touch $log_file
 
 echo
-echo "$tool_name v$tool_version"
+echo "$_ght_name v$_ght_version"
 echo "Copyright (C) 2013  Erdem UNCUOGLU <erdem.uncuoglu at gmail.com>"
 echo "This software is licensed under GPL version 3. See file COPYING for details."
-__checkversion --verbose
+_ght_checkversion --verbose
 echo
 
 git()
 {
 	ec=127
+#TODO load core modules and plugins dynamically
 	case "$1" in
 		update)
 			[ -z $2 ] && branch=master || branch=$2
-			__checkversion --verbose $branch
+			_ght_checkversion --verbose $branch
 			[ $? -ne 2 ] && return $ec
 			(
 				cd $self_dir
-				__rungit fetch --all
+				_ght_rungit fetch --all
 				remote=
 				remotes=`git remote -v`
 				oldIFS=$IFS
 				IFS=$'\n'
-				for line in $remotes; do
+				for line in $remotes
+				do
 					if [ "${line%%github.com*}" != "$line" -a "${line%%githelpertools*}" != "$line" ]; then
 						remote=`echo $line | cut -f 1`
 						break
@@ -73,48 +83,48 @@ git()
 			fi
 			;;
 		cd)
-			type -p __gitcd &> /dev/null || return $ec
+			type -p _ght_cd &> /dev/null || return $ec
 			shift
-			__gitcd "$@"
+			_ght_cd "$@"
 			ec=$?
 			;;
 		upd)
-			type -p __gitupd &> /dev/null || return $ec
+			type -p _ght_gitupd &> /dev/null || return $ec
 			shift
-			__gitupd "$@"
+			_ght_gitupd "$@"
 			ec=$?
 			;;
 		new)
 			shift
 			if [ -n "$1" ]; then
 				[ -z "$2" ] && base_branch="master" || base_branch="$2"
-				__rungit fetch origin
-				__rungit checkout -b "$1" "origin/$base_branch"
+				_ght_rungit fetch origin
+				_ght_rungit checkout -b "$1" "origin/$base_branch"
 				ec=$?
 			fi
 			;;
 		log)
 			shift
 			if [ -z "$1" ]; then
-				__rungit log --graph --full-history --all --color --pretty=format:'%Cred%h%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>' --date-order
-				#__rungit log --graph --full-history --all --color --pretty=format:'%x1b[31m%h%x09%x1b[32m%d%x1b[0m%x20%s' --date-order
+				_ght_rungit log --graph --full-history --all --color --pretty=format:'%Cred%h%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>' --date-order
+				#_ght_rungit log --graph --full-history --all --color --pretty=format:'%x1b[31m%h%x09%x1b[32m%d%x1b[0m%x20%s' --date-order
 				ec=$?
 			else
-				__rungit log "$@"
+				_ght_rungit log "$@"
 			fi
 			;;
 		*)
-			__rungit "$@"
+			_ght_rungit "$@"
 			;;
 	esac
 	return $ec;
 }
 
-__rungit()
+_ght_rungit()
 {
 	$git_cmd "$@"
 	ec=$?
-	# TODO implement a '__log' function instead
+	# TODO implement a '_ght_log' function instead
 	echo `date +"%Y-%m-%d %H:%M:%S"`" :: $ec :: $@" >> $log_file
 	return $ec
 }

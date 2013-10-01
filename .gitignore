@@ -2,7 +2,7 @@
 /.buildpath
 /.project
 
+/plugins/*
+!/plugins/readme
 /log
-/user/*
-!/user/sample.repo
-!/user/sample.alias
+/user
