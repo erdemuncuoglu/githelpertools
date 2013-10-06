@@ -22,48 +22,65 @@
 ###########################################################################
 
 
-git_cmd=`type -fp git`
+__ght_git_cmd=`type -fp git`
 if [ ! -x $git_cmd ]; then
 	echo "Cannot find GIT..."
 	return 2
 fi
 
-self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+__ght_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-[ -f $self_dir/lib/base.sh ] && . $self_dir/lib/base.sh || return 1
-
-for plugin_file in $(ls $self_dir/plugins/*.sh 2> /dev/null)
-do
-	source $plugin_file
-done
-
-for core_file in $(ls $self_dir/core/*.sh 2> /dev/null)
-do
-	source $core_file
-done
-
-
-log_file=$self_dir/log/githelper.log
-_ght_touch $log_file
+[ -f $__ght_self_dir/lib/base.sh ] && . $__ght_self_dir/lib/base.sh || return 1
 
 echo
-echo "$_ght_name v$_ght_version"
+for user_extention in $(ls $__ght_self_dir/plugins/*.sh 2> /dev/null)
+do
+	echo "Loading '`basename $user_extention`'"
+	source $user_extention
+done
+unset user_extention
+
+for core_extention in $(ls $__ght_self_dir/core/*.sh 2> /dev/null)
+do
+	echo "Loading '`basename $core_extention`'"
+	source $core_extention
+done
+unset core_extention
+
+#TODO:2013-10-06:erdem:log file name will be determined from config options
+__ght_log_file=$__ght_self_dir/log/githelper.log
+_ght_touch $__ght_log_file
+
+echo
+echo "$__ght_name v$__ght_version"
 echo "Copyright (C) 2013  Erdem UNCUOGLU <erdem.uncuoglu at gmail.com>"
 echo "This software is licensed under GPL version 3. See file COPYING for details."
-_ght_checkversion --verbose
+#_ght_checkversion --verbose
 echo
 
 git()
 {
-	ec=127
-#TODO load core modules and plugins dynamically
+	local ec=127
+	local run_cmd=_ght_$1_main
+
+	if [ "`type -t $run_cmd 2> /dev/null`" == "function" ]; then
+		shift
+		$run_cmd "$@"
+		ec=$?
+	else
+		_ght_rungit "$@"
+		ec=$?
+	fi		
+	return $ec;
+
+#TODO:2013-10-06:erdem:deprecated way of calling extensions. Convert sections to core extentions  
 	case "$1" in
 		update)
 			[ -z $2 ] && branch=master || branch=$2
 			_ght_checkversion --verbose $branch
 			[ $? -ne 2 ] && return $ec
 			(
-				cd $self_dir
+				cd $__ght_self_dir
 				_ght_rungit fetch --all
 				remote=
 				remotes=`git remote -v`
@@ -78,8 +95,8 @@ git()
 				done
 				[ -n $remote ] && git reset --hard $remote/$branch
 			)
-			if [ -x $self_dir/install.sh ]; then
-				$self_dir/install.sh --update && exec bash -l
+			if [ -x $__ght_self_dir/install.sh ]; then
+				$__ght_self_dir/install.sh --update && exec bash -l
 			fi
 			;;
 		cd)
@@ -122,9 +139,9 @@ git()
 
 _ght_rungit()
 {
-	$git_cmd "$@"
+	$__ght_git_cmd "$@"
 	ec=$?
-	# TODO implement a '_ght_log' function instead
-	echo `date +"%Y-%m-%d %H:%M:%S"`" :: $ec :: $@" >> $log_file
+#TODO:2013-10-06:edem:must implement a '_ght_log' function instead
+	echo `date +"%Y-%m-%d %H:%M:%S"`" :: $ec :: $@" >> $__ght_log_file
 	return $ec
 }

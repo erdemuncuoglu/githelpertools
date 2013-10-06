@@ -130,7 +130,7 @@ _ght_checkversion()
 	
 	#new_version=$(wget -qO- --no-check-certificate https://raw.github.com/erdemuncuoglu/githelpertools/$branch/VERSION 2> /dev/null)
 	new_version=$(_ght_geturl https://raw.github.com/erdemuncuoglu/githelpertools/$branch/VERSION)
-	_ght_vercomp $_ght_version $new_version
+	_ght_vercomp $__ght_version $new_version
 	ec=$?
 	if [ $verbose == "true" ]; then
 		[ $ec -eq 2 ] && echo "New version $new_version is available."

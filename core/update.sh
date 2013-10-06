@@ -25,12 +25,23 @@
 # Register module/plugin
 _ght_register "`basename ${BASH_SOURCE[0]}`"
 
-_ght_update()
+# Main function
+_ght_update_main()
 {
-	return 0
-}
-
-_git_ght_update()
-{
+	local branch
+	
+	[ -z $1 ] && branch=master || branch=$1
+	_ght_checkversion --verbose $branch
+	[ $? -ne 2 ] && return 1
+	(
+		cd $__ght_self_dir
+		_ght_rungit fetch --all
+		#TODO:2013-10-06:erdem:read remote from config  
+		remote=origin
+		[ -n $remote ] && git reset --hard $remote/$branch
+	)
+	if [ -x $__ght_self_dir/install.sh ]; then
+		$__ght_self_dir/install.sh --update && exec bash -l
+	fi
 	return 0
 }

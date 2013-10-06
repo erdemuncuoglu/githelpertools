@@ -22,83 +22,111 @@
 ###########################################################################
 
 
-# Register module/plugin
+# Register module
 _ght_register "`basename ${BASH_SOURCE[0]}`"
 
-_ght_cd()
+# GLobal variables
+declare -a __ght_cd_repos
+declare __ght_cd_alias
+
+# Init function
+_ght_cd_init()
 {
-	local public_args="-l --list -r --reload"
-	local priv_args="--complete --args"
-	local repo_list=$self_dir/user
-	local repo_base=""
+	local repo_file repo_line
+	local repo_list=$__ght_self_dir/user
+	__ght_cd_alias=
+		
+	for repo_file in $(ls $repo_list/*.repo 2> /dev/null)
+	do
+		echo "    Reading '`basename $repo_file`'"
+		while read repo_line
+		do
+			[ "${repo_line:0:1}" == "#" ] && continue
+			if [ `_ght_strindex "$repo_line" "="` -eq -1 ]; then
+				case "$repo_line" in
+					'~') repo_line="$HOME" ;;
+					'~'/*) repo_line="$HOME/${repo_line#'~/'}" ;;
+				esac
+				[ -d $repo_line ] || break
+			else
+				__ght_cd_alias=$__ght_cd_alias`_ght_split $repo_line 0`" "
+			fi
+			__ght_cd_repos+=($repo_line)
+		done < $repo_file
+	done
+}
+_ght_cd_init
+
+# Main function
+_ght_cd_main()
+{
 	local oldIFS="$IFS"
+	local fetch="false"
+	local alias repo repo_base repo_line complete
 	
 	if [ $# -eq 0 ]; then
 		pwd
 		return 0
 	fi
 	
-	for repo_file in $(ls $repo_list/*.repo 2> /dev/null)
+	case $1 in
+	-r|--refresh)
+		_ght_cd_init
+		return 0
+		;;
+	-f|--fetch)
+		fetch="true"
+		shift
+		;;
+	esac
+	
+	for repo_line in "${__ght_cd_repos[@]}"
 	do
-		#repo_file="$file"
-		while read line
-		do
-			[ "${line:0:1}" == "#" ] && continue
-
-			if [ -z $repo_base ]; then
-
-				if [ "${line:0:1}" == "/" -o "${line:0:1}" == "~" ]; then
-					repo_base="$line"
-
-					if [ x"$1" == "x--list" -o x"$1" == "x-l" ]; then
-						echo
-						echo -e "Repo dir : "$repo_base
-						echo -e "    Alias         Repository"
-						echo -e "    ------------  ----------------"
-					fi
-				fi
-				continue
+		if [ "${repo_line:0:1}" == "/" ]; then
+			repo_base=$repo_line
+			alias=
+		else
+			alias=`_ght_split $repo_line 0`
+			repo=`_ght_split $repo_line 1`
+		fi
+		
+		case "$1" in
+		--complete)
+			complete="$complete$alias "
+			continue
+			;;
+		--list|-l)
+			IFS="■"
+			if [ -z "$alias" ]; then
+				echo
+				echo -e "Repo dir : "$repo_base
+				echo -e "    "`_ght_rpad Alias 12`"  Repository"
+				echo -e "    "`_ght_repeat 12 -`"  "`_ght_repeat 16 -`
+			else
+				echo -e "    "`_ght_rpad $alias 12`"  "$repo
 			fi
-
-			if [[ "$line" != *=* ]]; then
-				continue
-			fi
-
-			key=`_ght_split $line 0`
-			val=`_ght_split $line 1`
-			if [ x"$1" == "x--list" -o x"$1" == "x-l" -o x"$1" == "x--complete" ]; then
-				IFS="■"
-				if [ x"$1" == "x--complete" ]; then
-					echo -e "	$key	"
-				else
-					echo -e "    "`_ght_rpad $key 12`"  "$val
-				fi
-				IFS="$oldIFS"
-			elif [ x"$1" == x"$key" ]; then
-				cd $repo_base/$val || return 1
-				git fetch --all
-				return 0
-			elif [ x"$1" == "x--backup" ]; then
-				if [ ! -d $BACKUP_BASE/$val ]; then
-					_ght_mkdir $BACKUP_BASE/$val
-				fi
-				cp -fv $repo_base/$val/.classpath $BACKUP_BASE/$val/
-				return 0
-			fi
-		done < $repo_file
-		repo_base=""
+			IFS="$oldIFS"
+			continue
+			;;
+		$alias)
+			cd "$repo_base/$repo" || return 1
+			[ $fetch == "true" ] && git fetch --all
+			return 0
+			;;
+		$repo_base)
+			;;
+		esac
 	done
+	return 0
+}		
 
-	[ x"$1" != "x--list" -a x"$1" != "x-l" -a x"$1" != "x--backup" -a x"$1" != "x--complete" ] && cd "$1"
-	return $?
-}
-
+# Completion function
 _git_ght_cd()
 {
 	local cur
 	local prev
-	local params="-l --list"
-	
+	local public_args="-l --list -r --refresh -f --fetch"
+		
 	cur=${COMP_WORDS[COMP_CWORD]}
 	prev=${COMP_WORDS[COMP_CWORD - 1]}
 
@@ -106,10 +134,10 @@ _git_ght_cd()
 
 		case "$cur" in
 		-*)
-			__gitcomp "$params"
+			__gitcomp "$public_args"
 			;;
 		*)
-			__gitcomp "$(_ght_cd --complete)"
+			__gitcomp "$__ght_cd_alias"
 			;;
 		esac
 	fi

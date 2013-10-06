@@ -24,17 +24,17 @@
 
 echo "Preparing Installer..."
 
-self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+__ght_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 git_completion=
 git_prompt=
 
-[ -f $self_dir/lib/base.sh ] && . $self_dir/lib/base.sh || exit 1
+[ -f $__ght_self_dir/lib/base.sh ] && . $__ght_self_dir/lib/base.sh || exit 1
 
 if [ `uname -s | grep -i "mingw"` ]; then
 	#if [ ! `type -fp wget` ]; then
-		#cp -f $self_dir/extension/wget/bin/* /bin/
-		#cp -f $self_dir/extension/wget/etc/* /etc/
+		#cp -f $__ght_self_dir/extension/wget/bin/* /bin/
+		#cp -f $__ght_self_dir/extension/wget/etc/* /etc/
 	#fi
 	#wget --no-check-certificate -qO /etc/git-prompt.sh https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh 2> /dev/null
 	#wget --no-check-certificate -qO /etc/git-completion.bash https://raw.github.com/git/git/master/contrib/completion/git-completion.bash 2> /dev/null
@@ -55,10 +55,10 @@ fi
 # TODO on MAC use .profile instead .bashrc
 bash_rc="$HOME/.bashrc"
 temp_rc="$HOME/temp.bashrc"
-inst_line="source $self_dir/githelper.sh # $_ght_name v$_ght_version"
-alias_list="$self_dir/conf/core.alias $(ls $self_dir/user/*.alias 2> /dev/null)"
+inst_line="source $__ght_self_dir/githelper.sh # $__ght_name v$__ght_version"
+alias_list="$__ght_self_dir/conf/core.alias $(ls $__ght_self_dir/user/*.alias 2> /dev/null)"
 
-[ x"$1" == x--update ] && echo "  Updating to v$_ght_version" || echo "  Installing $_ght_name v$_ght_version"
+[ x"$1" == x--update ] && echo "  Updating to v$__ght_version" || echo "  Installing $__ght_name v$__ght_version"
 [ -e $temp_rc ] && rm -f $temp_rc
 [ ! -e $bash_rc ] && _ght_touch $bash_rc
 
@@ -70,7 +70,7 @@ if [ -w $bash_rc ]; then
 	while read -r line
 	do
 		ignore="false"
-		for skipstr in $git_completion $git_prompt $_ght_name
+		for skipstr in $git_completion $git_prompt $__ght_name
 		do
 			if [[ "$line" == *"$skipstr"* ]]; then
 				ignore="true"

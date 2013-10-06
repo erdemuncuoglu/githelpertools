@@ -44,8 +44,10 @@ _ght_split()
 # Usage _ght_strindex string substring
 _ght_strindex()
 {
-	x="${1%%$2*}"
-	[[ "$x" = "$1" ]] && echo -1 || echo ${#x}
+	local ret
+	local str="${1%%$2*}"
+	[[ "$str" = "$1" ]] && ret=-1 || ret=${#str}
+	echo $ret
 }
 
 # Right pads given <string> to the given <length> with given <padchar>
