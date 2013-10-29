@@ -55,7 +55,7 @@ echo
 echo "$__ght_name v$__ght_version"
 echo "Copyright (C) 2013  Erdem UNCUOGLU <erdem.uncuoglu at gmail.com>"
 echo "This software is licensed under GPL version 3. See file COPYING for details."
-#_ght_checkversion --verbose
+_ght_checkversion --verbose
 echo
 
 git()

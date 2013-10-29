@@ -126,12 +126,13 @@ _git_ght_cd()
 	local cur
 	local prev
 	local public_args="-l --list -r --refresh -f --fetch"
-		
+	
 	cur=${COMP_WORDS[COMP_CWORD]}
 	prev=${COMP_WORDS[COMP_CWORD - 1]}
-
-	if [ "$prev" == "cd" ]; then
-
+	
+	if [ $prev == "-f" -o $prev == "--fetch" ]; then
+		__gitcomp "$__ght_cd_alias"
+	elif [ $prev == "cd" ]; then
 		case "$cur" in
 		-*)
 			__gitcomp "$public_args"

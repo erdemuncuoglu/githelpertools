@@ -5,4 +5,5 @@
 /plugins/*
 !/plugins/readme
 /log
-/user
+/user/*
+!/user/readme
