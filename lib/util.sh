@@ -153,15 +153,15 @@ _ght_geturl()
 	for item in $temp_dir_list
 	do
 		if [ -d "$item" ]; then
-			temp_file=$item/`_ght_rndstr`
+			temp_file=$item/ght-`_ght_rndstr`
 			break
 		fi
 	done
 	[ -z $temp_file ] && return 1
 	
-	if [ `type -fp wget` ]; then
+	if type -ft wget &> /dev/null; then
 		wget -qO $temp_file --no-check-certificate $url 2> /dev/null
-	elif [ `type -fp curl` ]; then
+	elif type -ft curl &> /dev/null; then
 		curl -so $temp_file --insecure $url 2> /dev/null
 	else
 		return 1
@@ -188,4 +188,19 @@ _ght_register()
 	git config --unset-all alias.$reg_name 2> /dev/null
 	git config --global alias.$reg_name ght_$reg_name
 	return 0
+}
+
+# Get or check OS type
+# Usage _ght_ostype [LINUX|BSD|WIN|MAC]
+_ght_ostype()
+{
+	local os_type=`uname -s`
+
+	[ `uname -s | egrep -i "linux"` ] && os_type="LINUX"
+	[ `uname -s | egrep -i "bsd"` ] && os_type="BSD"
+	[ `uname -s | egrep -i "cygwin|mingw|uwin"` ] && os_type="WIN"
+	[ `uname -s | egrep -i "darwin"` ] && os_type="MAC"
+	[ -z $1 ] && echo $os_type
+	[ "$1" == "$os_type" ]
+	return $?
 }

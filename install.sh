@@ -21,40 +21,38 @@
 #                                                                         #
 ###########################################################################
 
+export -f _debug
 
 echo "Preparing Installer..."
 
 __ght_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-git_completion=
-git_prompt=
-
 [ -f $__ght_self_dir/lib/base.sh ] && . $__ght_self_dir/lib/base.sh || exit 1
 
-if [ `uname -s | grep -i "mingw"` ]; then
-	#if [ ! `type -fp wget` ]; then
-		#cp -f $__ght_self_dir/extension/wget/bin/* /bin/
-		#cp -f $__ght_self_dir/extension/wget/etc/* /etc/
-	#fi
-	#wget --no-check-certificate -qO /etc/git-prompt.sh https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh 2> /dev/null
-	#wget --no-check-certificate -qO /etc/git-completion.bash https://raw.github.com/git/git/master/contrib/completion/git-completion.bash 2> /dev/null
-	_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh /etc/git-prompt.sh
-	_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-completion.bash /etc/git-completion.bash
-elif [ `uname -s | grep -i "darwin"` ]; then
+if _ght_ostype WIN; then
+	git_completion=/etc/git-completion.bash
+	git_prompt=/etc/git-prompt.sh
+	bash_rc=~/.bashrc
+	temp_rc=~/temp.bashrc
+elif _ght_ostype MAC; then
 	# TODO MAC OS implementation assigned to Mert KAYA
+	# git_completion=/etc/git-completion.bash
+	# git_prompt=/etc/git-prompt.sh
+
+	# TODO on MAC use .profile instead .bashrc
+	# bash_rc="$HOME/.bashrc"
+	# temp_rc="$HOME/temp.bashrc"
 	false
-else
-	#wget --no-check-certificate -qO $HOME/git-prompt.sh https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh 2> /dev/null
-	#wget --no-check-certificate -qO $HOME/git-completion.sh https://raw.github.com/git/git/master/contrib/completion/git-completion.bash 2> /dev/null
-	_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh $HOME/git-prompt.sh
-	_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-completion.bash $HOME/git-completion.sh
-	git_completion="git-completion.sh"
-	git_prompt="git-prompt.sh"
+elif _ght_ostype LINUX; then
+	git_completion=~/.git-completion.sh
+	git_prompt=~/.git-prompt.sh
+	bash_rc=~/.bashrc
+	temp_rc=~/temp.bashrc
 fi
 
-# TODO on MAC use .profile instead .bashrc
-bash_rc="$HOME/.bashrc"
-temp_rc="$HOME/temp.bashrc"
+_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh $git_completion
+_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-completion.bash $git_prompt
+
 inst_line="source $__ght_self_dir/githelper.sh # $__ght_name v$__ght_version"
 alias_list="$__ght_self_dir/conf/core.alias $(ls $__ght_self_dir/user/*.alias 2> /dev/null)"
 
@@ -65,24 +63,27 @@ alias_list="$__ght_self_dir/conf/core.alias $(ls $__ght_self_dir/user/*.alias 2>
 if [ -w $bash_rc ]; then
 	ta=`date +%s`
 	echo "  Updating $bash_rc"
-	cp $bash_rc $bash_rc~
+	cp -f $bash_rc $bash_rc~
 	_ght_touch $temp_rc
 	while read -r line
 	do
 		ignore="false"
-		for skipstr in $git_completion $git_prompt $__ght_name
+		for skipstr in git-completion git-prompt $__ght_name
 		do
 			if [[ "$line" == *"$skipstr"* ]]; then
 				ignore="true"
 				break
 			fi
 		done
-		[ "$ignore" == false ] && echo "$line" >> $temp_rc
+		[ "$ignore" == "false" ] && echo "$line" >> $temp_rc
 	done < $bash_rc
-	[ -n "$git_completion" ] && echo "source ~/$git_completion" >> $temp_rc
-	[ -n "$git_prompt" ] && echo "source ~/$git_prompt" >> $temp_rc
+
+	if _ght_ostype LINUX; then
+		echo "source $git_completion" >> $temp_rc
+		echo "source $git_prompt" >> $temp_rc
+	fi
 	echo "$inst_line" >> $temp_rc
-	cat $temp_rc > $bash_rc
+	mv -f $temp_rc $bash_rc
 	rm -f $temp_rc
 	
 	echo "  Updating git aliases"
@@ -96,9 +97,7 @@ if [ -w $bash_rc ]; then
 			git config --global --unset-all alias.$alias_name
 			if [ "$alias_cmd" != "false" ]; then
 				git config --global alias.$alias_name "$alias_cmd" 
-				echo -n "    alias $alias_name"
-				[ "$alias_cmd" != "true" ] && echo -n " = $alias_cmd"
-				echo
+				echo "    alias $alias_name = $alias_cmd"
 			fi
 		done < $alias_file
 	done
