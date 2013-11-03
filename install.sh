@@ -21,20 +21,19 @@
 #                                                                         #
 ###########################################################################
 
-export -f _debug
 
 echo "Preparing Installer..."
 
-__ght_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+__ght_self_dir=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd`
 
-[ -f $__ght_self_dir/lib/base.sh ] && . $__ght_self_dir/lib/base.sh || exit 1
+[ -f "$__ght_self_dir/lib/base.sh" ] && . "$__ght_self_dir/lib/base.sh" || exit 1
 
-if _ght_ostype WIN; then
+if _ght_shell_type MINGW; then
 	git_completion=/etc/git-completion.bash
 	git_prompt=/etc/git-prompt.sh
 	bash_rc=~/.bashrc
 	temp_rc=~/temp.bashrc
-elif _ght_ostype MAC; then
+elif _ght_shell_type MAC; then
 	# TODO MAC OS implementation assigned to Mert KAYA
 	# git_completion=/etc/git-completion.bash
 	# git_prompt=/etc/git-prompt.sh
@@ -43,15 +42,18 @@ elif _ght_ostype MAC; then
 	# bash_rc="$HOME/.bashrc"
 	# temp_rc="$HOME/temp.bashrc"
 	false
-elif _ght_ostype LINUX; then
+elif _ght_shell_type LINUX; then
 	git_completion=~/.git-completion.sh
 	git_prompt=~/.git-prompt.sh
 	bash_rc=~/.bashrc
 	temp_rc=~/temp.bashrc
+else
+	echo "new shell : "`_ght_shell_type`
+	exit 1
 fi
 
-_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh $git_completion
-_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-completion.bash $git_prompt
+_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh "$git_completion"
+_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-completion.bash "$git_prompt"
 
 inst_line="source $__ght_self_dir/githelper.sh # $__ght_name v$__ght_version"
 alias_list="$__ght_self_dir/conf/core.alias $(ls $__ght_self_dir/user/*.alias 2> /dev/null)"
@@ -61,7 +63,9 @@ alias_list="$__ght_self_dir/conf/core.alias $(ls $__ght_self_dir/user/*.alias 2>
 [ ! -e $bash_rc ] && _ght_touch $bash_rc
 
 if [ -w $bash_rc ]; then
-	ta=`date +%s`
+	nanosec="false"
+	ta=`date +%s%N`
+	[ ${ta/\%N/} == $ta ] && nanosec="true" || ta=${ta/\%N/}
 	echo "  Updating $bash_rc"
 	cp -f $bash_rc $bash_rc~
 	_ght_touch $temp_rc
@@ -78,14 +82,13 @@ if [ -w $bash_rc ]; then
 		[ "$ignore" == "false" ] && echo "$line" >> $temp_rc
 	done < $bash_rc
 
-	if _ght_ostype LINUX; then
+	if _ght_shell_type LINUX; then
 		echo "source $git_completion" >> $temp_rc
 		echo "source $git_prompt" >> $temp_rc
 	fi
 	echo "$inst_line" >> $temp_rc
 	mv -f $temp_rc $bash_rc
-	rm -f $temp_rc
-	
+
 	echo "  Updating git aliases"
 	for alias_file in $alias_list
 	do
@@ -93,7 +96,7 @@ if [ -w $bash_rc ]; then
 		do
 			alias_name=$(_ght_trim `_ght_split "$git_alias" 0`)
 			alias_cmd=$(_ght_trim `_ght_split "$git_alias" 1`)
-	
+
 			git config --global --unset-all alias.$alias_name
 			if [ "$alias_cmd" != "false" ]; then
 				git config --global alias.$alias_name "$alias_cmd" 
@@ -101,8 +104,12 @@ if [ -w $bash_rc ]; then
 			fi
 		done < $alias_file
 	done
-	tb=`date +%s`
-	echo "Completed in $((tb - ta))s."
+
+	tb=`date +%s%N`
+	[ $nanosec == "false" ] && tb=${tb/\%N/}    
+	td=$((tb - ta))
+	[ $nanosec == "true" ] && td=$((td / 1000000))"ms" || td=$td"s"
+	echo "Completed in $td."
 	echo
 	[ x"$1" != x--update ] && echo "Run 'exec bash -l' to activate changes"
 	exit 0

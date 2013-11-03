@@ -191,14 +191,16 @@ _ght_register()
 }
 
 # Get or check OS type
-# Usage _ght_ostype [LINUX|BSD|WIN|MAC]
-_ght_ostype()
+# Usage _ght_shell_type [LINUX|BSD|MINGW|CYGWIN|UWIN|MAC]
+_ght_shell_type()
 {
 	local os_type=`uname -s`
 
 	[ `uname -s | egrep -i "linux"` ] && os_type="LINUX"
 	[ `uname -s | egrep -i "bsd"` ] && os_type="BSD"
-	[ `uname -s | egrep -i "cygwin|mingw|uwin"` ] && os_type="WIN"
+	[ `uname -s | egrep -i "mingw"` ] && os_type="MINGW"
+	[ `uname -s | egrep -i "cygwin"` ] && os_type="CYGWIN"
+	[ `uname -s | egrep -i "uwin"` ] && os_type="UWIN"
 	[ `uname -s | egrep -i "darwin"` ] && os_type="MAC"
 	[ -z $1 ] && echo $os_type
 	[ "$1" == "$os_type" ]

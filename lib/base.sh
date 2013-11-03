@@ -25,12 +25,13 @@
 #TODO:2013-09-30:erdem:Read conf files
 
 __ght_name="gitHelperTools"
-__ght_version=$(cat $__ght_self_dir/VERSION)
+__ght_version=$(cat "$__ght_self_dir/VERSION")
 
-for lib_file in $(ls $__ght_self_dir/lib/*.sh 2> /dev/null)
+for lib_file in "$(ls "$__ght_self_dir/lib/"*.sh 2> /dev/null)"
 do
+	echo "$lib_file"
 	if [ "$lib_file" != "${BASH_SOURCE[0]}" ]; then
-		source $lib_file
+		source "$lib_file"
 	fi
 done
 unset lib_file

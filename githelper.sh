@@ -28,7 +28,7 @@ if [ ! -x $git_cmd ]; then
 	return 2
 fi
 
-__ght_self_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+__ght_self_dir=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)`
 
 [ -f $__ght_self_dir/lib/base.sh ] && . $__ght_self_dir/lib/base.sh || return 1
 
@@ -63,7 +63,7 @@ git()
 	local ec=127
 	local run_cmd=_ght_$1_main
 
-	if [ "`type -t $run_cmd 2> /dev/null`" == "function" ]; then
+	if [ `type -t $run_cmd 2> /dev/null` == "function" ]; then
 		shift
 		$run_cmd "$@"
 		ec=$?
