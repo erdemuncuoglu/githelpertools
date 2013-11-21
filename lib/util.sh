@@ -26,7 +26,7 @@
 # Usage _ght_rungit <param> ...
 _ght_rungit()
 {
-	$__ght_git_cmd "$@"
+	"$__ght_git_cmd" "$@"
 	ec=$?
 	_ght_log $ec "$@"
 	return $ec
@@ -88,7 +88,7 @@ _ght_getconfig()
 	local ec
 
 	if [ -n "$key" ]; then
-		value=`$__ght_git_cmd config --global --get ght.$key 2> /dev/null`
+		value=`"$__ght_git_cmd" config --global --get ght.$key 2> /dev/null`
 		
 		[ $? -ne 0 -o -x "$value" ] && value='error'
 		if [ "$value" == "yes" ]; then
@@ -106,7 +106,7 @@ _ght_getconfig()
 # Usage _ght_getremote
 _ght_getremote()
 {
-	local remote=$(_ght_geconfig remote)
+	local remote=$(_ght_getconfig remote)
 	
 	if [ -z "$remote" ]; then
 		remote=$(git remote -v | grep -i -e "github" | head -1 | cut -d $'\t' -f 1)
@@ -227,7 +227,7 @@ _ght_checkversion()
 	_ght_vercomp $__ght_version $new_version
 	ec=$?
 	if [ $verbose == "true" ]; then
-		[ $ec -eq 2 ] && echo "New version $new_version is available!"
+		[ $ec -eq 2 ] && echo -e "New version \e[44m$new_version\e[0m is available!"
 	fi
 	[ $ec -eq 2 ] && _ght_log_core "New version $new_version" || _ght_log_core "No new version"
 	return $ec
@@ -287,8 +287,8 @@ _ght_register()
 {
 	local reg_name=${1%.*}
 	
-	$__ght_git_cmd config --unset-all alias.$reg_name 2> /dev/null
-	$__ght_git_cmd config --global alias.$reg_name ght_$reg_name
+	"$__ght_git_cmd" config --unset-all alias.$reg_name 2> /dev/null
+	"$__ght_git_cmd" config --global alias.$reg_name ght_$reg_name
 	return 0
 }
 

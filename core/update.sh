@@ -38,10 +38,10 @@ _ght_update_main()
 	_ght_checkversion --verbose $branch
 	[ $? -ne 2 ] && return 1
 	(
-		cd $__ght_self_dir
-		$__ght_git_cmd fetch $remote
-		[ "$update" == reset ] && $__ght_git_cmd reset --hard $remote/$branch
-		[ "$update" == pull ] && $__ght_git_cmd pull $remote $branch
+		cd "$__ght_self_dir"
+		"$__ght_git_cmd" fetch $remote
+		[ "$update" == reset ] && "$__ght_git_cmd" reset --hard $remote/$branch
+		[ "$update" == pull ] && "$__ght_git_cmd" pull $remote $branch
 	)
 	if [ -x "$__ght_self_dir/install.sh" ]; then
 		"$__ght_self_dir/install.sh" --update && exec bash -l

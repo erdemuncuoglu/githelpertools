@@ -40,8 +40,8 @@ do
 			conf_name=$(_ght_trim `_ght_split "$conf_line" 0`)
 			conf_value=$(_ght_trim `_ght_split "$conf_line" 1`)
 			if [ -n "$conf_value" ]; then
-				$__ght_git_cmd config --global --unset-all ght.$conf_name
-				$__ght_git_cmd config --global --add ght.$conf_name $conf_value
+				"$__ght_git_cmd" config --global --unset-all ght.$conf_name
+				"$__ght_git_cmd" config --global --add ght.$conf_name $conf_value
 			fi
 		fi
 	done < "$conf_file"
