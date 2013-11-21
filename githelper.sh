@@ -30,8 +30,6 @@ echo
 echo "$__ght_name v$__ght_version"
 echo "Copyright (C) 2013  Erdem UNCUOGLU <erdem.uncuoglu at gmail.com>"
 echo "This software is licensed under GPL version 3. See file COPYING for details."
-_ght_checkversion --verbose
-echo
 
 while IFS= read -d $'\n' -r conf_file && test -n "$conf_file"
 do
@@ -47,9 +45,11 @@ do
 			fi
 		fi
 	done < "$conf_file"
-	#_ght_log "Config : `basename "$conf_file"`"
+	_ght_log_core `basename "$conf_file"`
 done <<<"$(find "$__ght_self_dir/conf" "$__ght_self_dir/user" -iname "*.conf" -print)"
 unset conf_file
+
+_ght_getconfig checkupdate && _ght_checkversion --verbose
 
 while IFS= read -d $'\n' -r user_extension && test -n "$user_extension"
 do
@@ -60,11 +60,12 @@ unset user_extension
 
 while IFS= read -d $'\n' -r core_extension && test -n "$core_extension"
 do
-	_ght_log "Core : `basename "$core_extension"`"
+	_ght_log_core `basename "$core_extension"`
 	source "$core_extension"
 done <<<"$(find "$__ght_self_dir/core" -iname "*.sh" -print)"
 unset core_extension
 
+echo
 
 git()
 {

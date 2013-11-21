@@ -32,8 +32,11 @@ _ght_rungit()
 	return $ec
 }
 
-# Logger function
-# Usage _ght_log <exitcode> <logstring>
+# Logger functions
+# Usage _ght_log <logstring>
+# Usage _ght_log_user <logstring>
+# Usage _ght_log_core <logstring>
+# Usage _ght_log_ec <exitcode> <logstring>
 _ght_log()
 {
 	local filename
@@ -47,17 +50,33 @@ _ght_log()
 		daily)
 			filename=`date +"%F"`.log;;
 		*)
-			filename=`_ght_getconfig logfile`
+		filename=`_ght_getconfig logfile` || filename=githelper.log
 	esac
 	[[ "${filename:0:1}" != "/" && "${filename:0:1}" != "~" ]] && filename="$__ght_self_dir/log/$filename"
 	_ght_touch "$filename"
 
-	echo -n [`date +"%F %T"`] >> "$filename"
+	echo [`date +"%F %T"`] "$*" >> "$filename"
+}
+
+_ght_log_ec()
+{
+	local prefix
+	
 	if [ $1 -ge 0 ] 2> /dev/null; then
-		echo -n " $1 ::" >> "$filename"
+	prefix="$1 :: "
 		shift
 	fi
-	echo " $@" >> "$filename"
+	_ght_log "$prefix$*"
+}
+
+_ght_log_user()
+{
+	_ght_log "User :: $*"
+}
+
+_ght_log_core()
+{
+	_ght_log "Core :: $*"
 }
 
 # Get value of a configuration option
@@ -70,8 +89,15 @@ _ght_getconfig()
 
 	if [ -n "$key" ]; then
 		value=`$__ght_git_cmd config --global --get ght.$key 2> /dev/null`
-		ec=$?
-		echo $value
+		
+		[ $? -ne 0 -o -x "$value" ] && value='error'
+		if [ "$value" == "yes" ]; then
+			ec=0
+		elif [ "$value" == "no" ]; then
+			ec=1
+		else
+			echo $value
+		fi
 	fi
 	return $ec
 }
@@ -201,8 +227,9 @@ _ght_checkversion()
 	_ght_vercomp $__ght_version $new_version
 	ec=$?
 	if [ $verbose == "true" ]; then
-		[ $ec -eq 2 ] && echo "New version $new_version is available."
+		[ $ec -eq 2 ] && echo "New version $new_version is available!"
 	fi
+	[ $ec -eq 2 ] && _ght_log_core "New version $new_version" || _ght_log_core "No new version"
 	return $ec
 }
 
@@ -220,7 +247,7 @@ _ght_geturl()
 		url="$1"
 		shift
 	else
-		url=`_ght_getconfig url`
+		url=`_ght_getconfig checkurl`
 	fi
 	
 	[ -n "$1" ] && out_file="$1"

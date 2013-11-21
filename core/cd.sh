@@ -39,7 +39,7 @@ _ght_cd_init()
 		
 	while read -r repo_file && [ -n "$repo_file" ]
 	do
-		_ght_log "cd : `basename "$repo_file"`"
+		_ght_log_core "cd :: `basename "$repo_file"`"
 		while read -r repo_line
 		do
 			_ght_is_comment "$repo_line" && continue
