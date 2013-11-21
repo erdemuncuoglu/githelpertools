@@ -22,16 +22,20 @@
 ###########################################################################
 
 
-#TODO:2013-09-30:erdem:Read conf files
+
+__ght_git_cmd=`type -fp git`
+if [ $? != 0 ]; then
+	echo "Cannot find GIT..."
+	return 2
+fi
 
 __ght_name="gitHelperTools"
 __ght_version=$(cat "$__ght_self_dir/VERSION")
 
-for lib_file in "$(ls "$__ght_self_dir/lib/"*.sh 2> /dev/null)"
+while IFS= read -d $'\n' -r lib_file && test -n "$lib_file"
 do
-	echo "$lib_file"
 	if [ "$lib_file" != "${BASH_SOURCE[0]}" ]; then
 		source "$lib_file"
 	fi
-done
+done <<<"$(find "$__ght_self_dir/lib/" -iname "*.sh" -print)"
 unset lib_file

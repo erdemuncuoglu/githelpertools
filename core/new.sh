@@ -22,29 +22,28 @@
 ###########################################################################
 
 
-# Register module/plugin
+# Register module
 _ght_register `basename "${BASH_SOURCE[0]}"`
 
 # Main function
-_ght_update_main()
+_ght_new_main()
 {
-	local branch=`_ght_getconfig branch`
-	local remote=`_ght_getremote`
-	local update=`_ght_getconfig update`
+	local track_ref
+	local remote=$(_ght_getremote)
 	
-	[ -n "$1" ] && branch=$1
-	[ -z "$branch" -o -z "$remote" ] && return 1
-	
-	_ght_checkversion --verbose $branch
-	[ $? -ne 2 ] && return 1
-	(
-		cd $__ght_self_dir
-		$__ght_git_cmd fetch $remote
-		[ "$update" == reset ] && $__ght_git_cmd reset --hard $remote/$branch
-		[ "$update" == pull ] && $__ght_git_cmd pull $remote $branch
-	)
-	if [ -x "$__ght_self_dir/install.sh" ]; then
-		"$__ght_self_dir/install.sh" --update && exec bash -l
+	[ -z "$remote" ] && return 1
+	if [ -n "$1" ]; then
+		[ -z "$2" ] && track_ref="$remote/`_ght_getconfig branch`" || track_ref="$2"
+		_ght_rungit fetch origin && _ght_rungit checkout -b "$1" "$track_ref"
+		return $?
 	fi
+	return 127
+}
+
+# Completion function
+_git_ght_new()
+{
+	[ $COMP_CWORD -eq 2 ] && __gitcomp_nl "$(__git_heads)"
+	[ $COMP_CWORD -eq 3 ] && __gitcomp_nl "$(__git_refs | grep '/')"
 	return 0
 }

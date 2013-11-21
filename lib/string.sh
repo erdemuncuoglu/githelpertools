@@ -142,7 +142,7 @@ _ght_trim()
 
 # Creates a random string of <length> between 1 and 32
 # Usage _ght_rndstr length
-_ght_rndstr ()
+_ght_rndstr()
 {
 	local length=$1
 	local rnd_str
@@ -153,4 +153,15 @@ _ght_rndstr ()
 	rnd_str=${rnd_str:0:$length}
 	echo $rnd_str
 	return 0
+}
+
+# Checks if <string> is a comment line
+# Usage _ght_is_comment <string>
+_ght_is_comment()
+{
+	local string="$*"
+	
+	string=`_ght_trim "$string"`
+	[[ -z "$string" || "${string:0:1}" == "#" ]]
+	return $?
 }

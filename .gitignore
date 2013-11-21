@@ -2,8 +2,6 @@
 /.buildpath
 /.project
 
-/plugins/*
-!/plugins/readme
 /log
-/user/*
-!/user/readme
+/plugins
+/user

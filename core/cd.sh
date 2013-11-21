@@ -23,7 +23,7 @@
 
 
 # Register module
-_ght_register "`basename ${BASH_SOURCE[0]}`"
+_ght_register `basename "${BASH_SOURCE[0]}"`
 
 # GLobal variables
 declare -a __ght_cd_repos
@@ -32,28 +32,37 @@ declare __ght_cd_alias
 # Init function
 _ght_cd_init()
 {
-	local repo_file repo_line
+	local repo_base alias repo
 	local repo_list=$__ght_self_dir/user
 	__ght_cd_alias=
+	unset $__ght_cd_repos
 		
-	for repo_file in $(ls $repo_list/*.repo 2> /dev/null)
+	while read -r repo_file && [ -n "$repo_file" ]
 	do
-		echo "    Reading '`basename $repo_file`'"
-		while read repo_line
+		_ght_log "cd : `basename "$repo_file"`"
+		while read -r repo_line
 		do
-			[ "${repo_line:0:1}" == "#" ] && continue
+			_ght_is_comment "$repo_line" && continue
 			if [ `_ght_strindex "$repo_line" "="` -eq -1 ]; then
 				case "$repo_line" in
-					'~') repo_line="$HOME" ;;
-					'~'/*) repo_line="$HOME/${repo_line#'~/'}" ;;
+					'~') repo_base="$HOME" ;;
+					'~'/*) repo_base="$HOME/${repo_line#'~/'}" ;;
+					*) repo_base="$repo_line" ;;
 				esac
-				[ -d $repo_line ] || break
+				continue
 			else
-				__ght_cd_alias=$__ght_cd_alias`_ght_split $repo_line 0`" "
+				alias=`_ght_split "$repo_line" 0`
+				repo=`_ght_split "$repo_line" 1`
+				case "$repo" in
+					'~') repo="$HOME" ;;
+					'~'/*) repo="$HOME/${repo#'~/'}" ;;
+					[^/]*) repo="$repo_base/$repo" ;;
+				esac
+				__ght_cd_alias=$__ght_cd_alias$alias" "
+				__ght_cd_repos+=("$alias=$repo")
 			fi
-			__ght_cd_repos+=($repo_line)
-		done < $repo_file
-	done
+		done < "$repo_file"
+	done <<<"$(find "$__ght_self_dir/user" -iname "*.repo" -print)"
 }
 _ght_cd_init
 
@@ -62,11 +71,11 @@ _ght_cd_main()
 {
 	local oldIFS="$IFS"
 	local fetch="false"
-	local alias repo repo_base repo_line complete
+	local alias repo repo_line
 	
 	if [ $# -eq 0 ]; then
 		pwd
-		return 0
+		return $?
 	fi
 	
 	case $1 in
@@ -82,38 +91,25 @@ _ght_cd_main()
 	
 	for repo_line in "${__ght_cd_repos[@]}"
 	do
-		if [ "${repo_line:0:1}" == "/" ]; then
-			repo_base=$repo_line
-			alias=
-		else
-			alias=`_ght_split $repo_line 0`
-			repo=`_ght_split $repo_line 1`
-		fi
+		alias=`_ght_split "$repo_line" 0`
+		repo=`_ght_split "$repo_line" 1`
 		
 		case "$1" in
-		--complete)
-			complete="$complete$alias "
-			continue
-			;;
 		--list|-l)
 			IFS="■"
-			if [ -z "$alias" ]; then
+			if [ "$repo_line" == "${__ght_cd_repos[0]}" ]; then
 				echo
-				echo -e "Repo dir : "$repo_base
 				echo -e "    "`_ght_rpad Alias 12`"  Repository"
 				echo -e "    "`_ght_repeat 12 -`"  "`_ght_repeat 16 -`
-			else
-				echo -e "    "`_ght_rpad $alias 12`"  "$repo
 			fi
+			echo -e "    "`_ght_rpad "$alias" 12`"  "`basename "$repo"`
 			IFS="$oldIFS"
 			continue
 			;;
 		$alias)
-			cd "$repo_base/$repo" || return 1
+			cd "$repo" || return 1
 			[ $fetch == "true" ] && git fetch --all
 			return 0
-			;;
-		$repo_base)
 			;;
 		esac
 	done
@@ -129,6 +125,8 @@ _git_ght_cd()
 	
 	cur=${COMP_WORDS[COMP_CWORD]}
 	prev=${COMP_WORDS[COMP_CWORD - 1]}
+
+	[ -z "$__ght_cd_alias" ] && __ght_cd_alias="$public_args"
 	
 	if [ $prev == "-f" -o $prev == "--fetch" ]; then
 		__gitcomp "$__ght_cd_alias"

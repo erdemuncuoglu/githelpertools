@@ -22,6 +22,75 @@
 ###########################################################################
 
 
+# Inline funtion to run git commands
+# Usage _ght_rungit <param> ...
+_ght_rungit()
+{
+	$__ght_git_cmd "$@"
+	ec=$?
+	_ght_log $ec "$@"
+	return $ec
+}
+
+# Logger function
+# Usage _ght_log <exitcode> <logstring>
+_ght_log()
+{
+	local filename
+	local rotate
+	
+	case $(_ght_getconfig logrotate) in
+		monthly)
+			filename=`date +"%Y-%m"`-01.log;;
+		weekly)
+			filename=`date -d "$(( $(date +%u) - 1 )) days ago" +"%F"`.log;;
+		daily)
+			filename=`date +"%F"`.log;;
+		*)
+			filename=`_ght_getconfig logfile`
+	esac
+	[[ "${filename:0:1}" != "/" && "${filename:0:1}" != "~" ]] && filename="$__ght_self_dir/log/$filename"
+	_ght_touch "$filename"
+
+	echo -n [`date +"%F %T"`] >> "$filename"
+	if [ $1 -ge 0 ] 2> /dev/null; then
+		echo -n " $1 ::" >> "$filename"
+		shift
+	fi
+	echo " $@" >> "$filename"
+}
+
+# Get value of a configuration option
+# Usage _ght_config_get <option>
+_ght_getconfig()
+{
+	local key=$1
+	local value
+	local ec
+
+	if [ -n "$key" ]; then
+		value=`$__ght_git_cmd config --global --get ght.$key 2> /dev/null`
+		ec=$?
+		echo $value
+	fi
+	return $ec
+}
+
+# Get remote name
+# Usage _ght_getremote
+_ght_getremote()
+{
+	local remote=$(_ght_geconfig remote)
+	
+	if [ -z "$remote" ]; then
+		remote=$(git remote -v | grep -i -e "github" | head -1 | cut -d $'\t' -f 1)
+	fi
+	
+	[ -z "$remote" ] && return 1
+	echo $remote
+	return 0
+}
+
 # Returns argument at <index>
 # Usage _ght_nthparam index args...
 _ght_nthparam()
@@ -53,12 +122,12 @@ _ght_lastparam()
 _ght_touch()
 {
 	local params="$@"
-	local file=`_ght_lastparam $params`
+	local file=`_ght_lastparam "$@"`
 	
-	[ -e $file ] && return 1
-	touch $params &> /dev/null && return 0
-	_ght_mkdir `dirname "$file"`
-	[ $? -eq 0 ] && touch $params || return 1
+	[ -e "$file" ] && return 1
+	touch "$@" &> /dev/null && return 0
+	_ght_mkdir "`dirname "$file"`"
+	[ $? -eq 0 ] && touch "$@" || return 1
 	return $?
 }
 
@@ -68,12 +137,12 @@ _ght_mkdir()
 {
 	local dir="$1"
 	
-	[ -z $dir -o $dir == "." -o $dir == "/" -o -e $dir ] && return 1
-	mkdir $dir &> /dev/null
+	[ -z "$dir" -o "$dir" == "." -o "$dir" == "/" -o -e "$dir" ] && return 1
+	mkdir "$dir" &> /dev/null
 	[ $? -eq 0 ] && return 0
-	_ght_mkdir `dirname "$dir"`
+	_ght_mkdir "`dirname "$dir"`"
 	[ $? -ne 0 ] && return 1
-	mkdir $dir
+	mkdir "$dir"
 	return $?
 }
 
@@ -128,8 +197,7 @@ _ght_checkversion()
 	fi
 	[ -n "$1" ] && branch="$1"
 	
-	#new_version=$(wget -qO- --no-check-certificate https://raw.github.com/erdemuncuoglu/githelpertools/$branch/VERSION 2> /dev/null)
-	new_version=$(_ght_geturl https://raw.github.com/erdemuncuoglu/githelpertools/$branch/VERSION)
+	new_version=`_ght_geturl`
 	_ght_vercomp $__ght_version $new_version
 	ec=$?
 	if [ $verbose == "true" ]; then
@@ -145,20 +213,27 @@ _ght_geturl()
 	local ec
 	local temp_dir_list="/tmp $TMP $TEMP"
 	local temp_file
-	local url=$1
-	local out_file=$2
+	local url
+	local out_file
 	
-	[ -z $url ] && return 1
+	if [ -n "$1" ]; then
+		url="$1"
+		shift
+	else
+		url=`_ght_getconfig url`
+	fi
+	
+	[ -n "$1" ] && out_file="$1"
 	
 	for item in $temp_dir_list
 	do
 		if [ -d "$item" ]; then
-			temp_file=$item/ght-`_ght_rndstr`
+			temp_file="$item/ght-`_ght_rndstr`"
 			break
 		fi
 	done
 	[ -z $temp_file ] && return 1
-	
+
 	if type -ft wget &> /dev/null; then
 		wget -qO $temp_file --no-check-certificate $url 2> /dev/null
 	elif type -ft curl &> /dev/null; then
@@ -166,16 +241,16 @@ _ght_geturl()
 	else
 		return 1
 	fi
-	
-	if [[ -n $out_file && $out_file != "-" ]]; then
-		cp -f $temp_file $out_file
+
+	if [[ -n "$out_file" && "$out_file" != "-" ]]; then
+		cp -f "$temp_file" "$out_file"
 		ec=$?
 	else
-		cat $temp_file
+		cat "$temp_file"
 		ec=$?
 	fi
 	
-	rm -f $temp_file
+	rm -f "$temp_file"
 	return $ec
 }
 
@@ -185,14 +260,14 @@ _ght_register()
 {
 	local reg_name=${1%.*}
 	
-	git config --unset-all alias.$reg_name 2> /dev/null
-	git config --global alias.$reg_name ght_$reg_name
+	$__ght_git_cmd config --unset-all alias.$reg_name 2> /dev/null
+	$__ght_git_cmd config --global alias.$reg_name ght_$reg_name
 	return 0
 }
 
 # Get or check OS type
-# Usage _ght_shell_type [LINUX|BSD|MINGW|CYGWIN|UWIN|MAC]
-_ght_shell_type()
+# Usage _ght_shelltype [LINUX|BSD|MINGW|CYGWIN|UWIN|MAC]
+_ght_shelltype()
 {
 	local os_type=`uname -s`
 
@@ -206,3 +281,4 @@ _ght_shell_type()
 	[ "$1" == "$os_type" ]
 	return $?
 }
+

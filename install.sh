@@ -22,18 +22,24 @@
 ###########################################################################
 
 
-echo "Preparing Installer..."
+echo " * Preparing Installer..."
+
+nanosec="false"
+ta=`date +%s%N`
+[ ${ta/\%N/} == $ta ] && nanosec="true" || ta=${ta/\%N/}
 
 __ght_self_dir=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd`
 
 [ -f "$__ght_self_dir/lib/base.sh" ] && . "$__ght_self_dir/lib/base.sh" || exit 1
 
-if _ght_shell_type MINGW; then
+[ x"$1" == x--update ] && echo " * Updating to v$__ght_version" || echo " * Installing $__ght_name v$__ght_version"
+
+if _ght_shelltype MINGW; then
 	git_completion=/etc/git-completion.bash
 	git_prompt=/etc/git-prompt.sh
 	bash_rc=~/.bashrc
 	temp_rc=~/temp.bashrc
-elif _ght_shell_type MAC; then
+elif _ght_shelltype MAC; then
 	# TODO MAC OS implementation assigned to Mert KAYA
 	# git_completion=/etc/git-completion.bash
 	# git_prompt=/etc/git-prompt.sh
@@ -42,33 +48,33 @@ elif _ght_shell_type MAC; then
 	# bash_rc="$HOME/.bashrc"
 	# temp_rc="$HOME/temp.bashrc"
 	false
-elif _ght_shell_type LINUX; then
+elif _ght_shelltype LINUX; then
 	git_completion=~/.git-completion.sh
 	git_prompt=~/.git-prompt.sh
 	bash_rc=~/.bashrc
 	temp_rc=~/temp.bashrc
 else
-	echo "new shell : "`_ght_shell_type`
+	echo "new shell : "`_ght_shelltype`
 	exit 1
 fi
 
+echo " * Downloading 'git-prompt.sh' and 'git-completion.bash'"
 _ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh "$git_completion"
 _ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-completion.bash "$git_prompt"
 
-inst_line="source $__ght_self_dir/githelper.sh # $__ght_name v$__ght_version"
-alias_list="$__ght_self_dir/conf/core.alias $(ls $__ght_self_dir/user/*.alias 2> /dev/null)"
+inst_line="source \"$__ght_self_dir/githelper.sh\" # $__ght_name v$__ght_version"
 
-[ x"$1" == x--update ] && echo "  Updating to v$__ght_version" || echo "  Installing $__ght_name v$__ght_version"
-[ -e $temp_rc ] && rm -f $temp_rc
-[ ! -e $bash_rc ] && _ght_touch $bash_rc
+[ -e "$temp_rc" ] && rm -f $temp_rc
+[ ! -e "$bash_rc" ] && _ght_touch $bash_rc
+_ght_mkdir user
+_ght_mkdir plugins
+_ght_mkdir log
 
-if [ -w $bash_rc ]; then
-	nanosec="false"
-	ta=`date +%s%N`
-	[ ${ta/\%N/} == $ta ] && nanosec="true" || ta=${ta/\%N/}
-	echo "  Updating $bash_rc"
-	cp -f $bash_rc $bash_rc~
-	_ght_touch $temp_rc
+if [ -w "$bash_rc" ]; then
+	echo " * Updating '`basename "$bash_rc"`'"
+	cp -f "$bash_rc" "$bash_rc~"
+	_ght_touch "$temp_rc"
+	IFS="■"
 	while read -r line
 	do
 		ignore="false"
@@ -79,18 +85,18 @@ if [ -w $bash_rc ]; then
 				break
 			fi
 		done
-		[ "$ignore" == "false" ] && echo "$line" >> $temp_rc
-	done < $bash_rc
+		[ "$ignore" == "false" ] && echo $line >> "$temp_rc"
+	done < "$bash_rc"
 
-	if _ght_shell_type LINUX; then
-		echo "source $git_completion" >> $temp_rc
-		echo "source $git_prompt" >> $temp_rc
+	if _ght_shelltype LINUX; then
+		echo 'source "'$git_completion'"' >> "$temp_rc"
+		echo 'source "'$git_prompt'"' >> "$temp_rc"
 	fi
-	echo "$inst_line" >> $temp_rc
-	mv -f $temp_rc $bash_rc
+	echo $inst_line >> "$temp_rc"
+	mv -f "$temp_rc" "$bash_rc"
 
-	echo "  Updating git aliases"
-	for alias_file in $alias_list
+	echo " * Updating git aliases"
+	while IFS= read -d $'\n' -r alias_file
 	do
 		while read -r git_alias
 		do
@@ -102,11 +108,11 @@ if [ -w $bash_rc ]; then
 				git config --global alias.$alias_name "$alias_cmd" 
 				echo "    alias $alias_name = $alias_cmd"
 			fi
-		done < $alias_file
-	done
+		done < "$alias_file"
+	done <<<"$(find "$__ght_self_dir/conf" "$__ght_self_dir/user" -iname "*.alias" -print)"
 
 	tb=`date +%s%N`
-	[ $nanosec == "false" ] && tb=${tb/\%N/}    
+	[ $nanosec == "false" ] && tb=${tb/\%N/}
 	td=$((tb - ta))
 	[ $nanosec == "true" ] && td=$((td / 1000000))"ms" || td=$td"s"
 	echo "Completed in $td."
@@ -115,5 +121,5 @@ if [ -w $bash_rc ]; then
 	exit 0
 fi
 
-echo "...failed!"
+echo " * Installation failed!"
 exit 1

@@ -22,29 +22,24 @@
 ###########################################################################
 
 
-# Register module/plugin
+# Register module
 _ght_register `basename "${BASH_SOURCE[0]}"`
 
 # Main function
-_ght_update_main()
+_ght_log_main()
 {
-	local branch=`_ght_getconfig branch`
-	local remote=`_ght_getremote`
-	local update=`_ght_getconfig update`
-	
-	[ -n "$1" ] && branch=$1
-	[ -z "$branch" -o -z "$remote" ] && return 1
-	
-	_ght_checkversion --verbose $branch
-	[ $? -ne 2 ] && return 1
-	(
-		cd $__ght_self_dir
-		$__ght_git_cmd fetch $remote
-		[ "$update" == reset ] && $__ght_git_cmd reset --hard $remote/$branch
-		[ "$update" == pull ] && $__ght_git_cmd pull $remote $branch
-	)
-	if [ -x "$__ght_self_dir/install.sh" ]; then
-		"$__ght_self_dir/install.sh" --update && exec bash -l
+	if [ -z "$1" ]; then
+		_ght_rungit log --graph --full-history --all --color --pretty=format:'%Cred%h%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>' --date-order
+		#_ght_rungit log --graph --full-history --all --color --pretty=format:'%x1b[31m%h%x09%x1b[32m%d%x1b[0m%x20%s' --date-order
+		ec=$?
+	else
+		_ght_rungit log "$@"
 	fi
+}
+
+# Completion function
+_git_ght_log()
+{
+	_git_log
 	return 0
 }
