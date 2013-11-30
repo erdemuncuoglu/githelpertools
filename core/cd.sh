@@ -35,7 +35,7 @@ _ght_cd_init()
 	local repo_base alias repo
 	local repo_list=$__ght_self_dir/user
 	__ght_cd_alias=
-	unset $__ght_cd_repos
+	unset __ght_cd_repos
 		
 	while read -r repo_file && [ -n "$repo_file" ]
 	do
