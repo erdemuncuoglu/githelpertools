@@ -33,8 +33,15 @@ _ght_new_main()
 	
 	[ -z "$remote" ] && return 1
 	if [ -n "$1" ]; then
-		[ -z "$2" ] && track_ref="$remote/`_ght_getconfig branch`" || track_ref="$2"
-		_ght_rungit fetch origin && _ght_rungit checkout -b "$1" "$track_ref"
+		if [ -z "$2" ]; then
+			track_ref="$remote/`_ght_getconfig branch`"
+		else
+			track_ref="$2"
+			if [ `_ght_strindex "$track_ref" "/"` -ge 0 ]; then
+				remote=`_ght_split "$track_ref" 0 "/"`
+			fi
+		fi
+		_ght_rungit fetch $remote && _ght_rungit checkout -b "$1" "$track_ref"
 		return $?
 	fi
 	return 127

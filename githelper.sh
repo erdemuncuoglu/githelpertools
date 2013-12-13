@@ -26,44 +26,86 @@ __ght_self_dir=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd`
 
 [ -f "$__ght_self_dir/lib/base.sh" ] && . "$__ght_self_dir/lib/base.sh" || return 1
 
+_ght_helper_conf()
+{
+	local conf_file
+	while IFS= read -d $'\n' -r conf_file && test -n "$conf_file"
+	do
+		while read -r conf_line
+		do
+			[ "${conf_line:0:1}" == "#" ] && continue
+			if [ `_ght_strindex "$conf_line" "="` -gt -1 ]; then
+				conf_name=$(_ght_trim `_ght_split "$conf_line" 0`)
+				conf_value=$(_ght_trim `_ght_split "$conf_line" 1`)
+				if [ -n "$conf_value" ]; then
+					"$__ght_git_cmd" config --global --unset-all ght.$conf_name
+					"$__ght_git_cmd" config --global --add ght.$conf_name $conf_value
+				fi
+			fi
+		done < "$conf_file"
+		_ght_log_core `basename "$conf_file"`
+	done <<<"$(find "$__ght_self_dir/conf" "$__ght_self_dir/user" -iname "*.conf" -print)"
+}
+
+_ght_helper_loadextention()
+{
+	local user_extension
+	while IFS= read -d $'\n' -r user_extension && test -n "$user_extension"
+	do
+		_ght_log "Plugin : `basename "$user_extension"`"
+		source "$user_extension"
+	done <<<"$(find "$__ght_self_dir/plugins" -iname "*.sh" -print)"
+	
+	local core_extension
+	while IFS= read -d $'\n' -r core_extension && test -n "$core_extension"
+	do
+		_ght_log_core `basename "$core_extension"`
+		source "$core_extension"
+	done <<<"$(find "$__ght_self_dir/core" -iname "*.sh" -print)"
+}
+
+_ght_register helper
+
+_ght_helper_main()
+{
+	case "$1" in
+	-r|--reload-conf)
+		_ght_helper_conf
+		;;
+	esac
+	return 0
+}
+
+_git_ght_helper()
+{
+	local cur
+	local public_args="-r --reload-conf"
+	
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	case "$cur" in
+	-*)
+		__gitcomp "$public_args"
+		;;
+	*)
+		__gitcomp "$public_args"
+		;;
+	esac
+	return 0
+		
+}
+
+
 echo
 echo "$__ght_name v$__ght_version"
 echo "Copyright (C) 2013  Erdem UNCUOGLU <erdem.uncuoglu at gmail.com>"
 echo "This software is licensed under GPL version 3. See file COPYING for details."
 
-while IFS= read -d $'\n' -r conf_file && test -n "$conf_file"
-do
-	while read -r conf_line
-	do
-		[ "${conf_line:0:1}" == "#" ] && continue
-		if [ `_ght_strindex "$conf_line" "="` -gt -1 ]; then
-			conf_name=$(_ght_trim `_ght_split "$conf_line" 0`)
-			conf_value=$(_ght_trim `_ght_split "$conf_line" 1`)
-			if [ -n "$conf_value" ]; then
-				"$__ght_git_cmd" config --global --unset-all ght.$conf_name
-				"$__ght_git_cmd" config --global --add ght.$conf_name $conf_value
-			fi
-		fi
-	done < "$conf_file"
-	_ght_log_core `basename "$conf_file"`
-done <<<"$(find "$__ght_self_dir/conf" "$__ght_self_dir/user" -iname "*.conf" -print)"
-unset conf_file
+_ght_helper_conf
 
 _ght_getconfig checkupdate && _ght_checkversion --verbose
 
-while IFS= read -d $'\n' -r user_extension && test -n "$user_extension"
-do
-	_ght_log "Plugin : `basename "$user_extension"`"
-	source "$user_extension"
-done <<<"$(find "$__ght_self_dir/plugins" -iname "*.sh" -print)"
-unset user_extension
-
-while IFS= read -d $'\n' -r core_extension && test -n "$core_extension"
-do
-	_ght_log_core `basename "$core_extension"`
-	source "$core_extension"
-done <<<"$(find "$__ght_self_dir/core" -iname "*.sh" -print)"
-unset core_extension
+_ght_helper_loadextention
 
 echo
 

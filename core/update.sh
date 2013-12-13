@@ -28,8 +28,8 @@ _ght_register `basename "${BASH_SOURCE[0]}"`
 # Main function
 _ght_update_main()
 {
-	local branch=`_ght_getconfig branch`
-	local remote=`_ght_getremote`
+	local branch=`_ght_getconfig updatebranch`
+	local remote=`_ght_getconfig updateremote`
 	local update=`_ght_getconfig update`
 	
 	[ -n "$1" ] && branch=$1
