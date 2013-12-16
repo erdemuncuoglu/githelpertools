@@ -27,7 +27,7 @@ _ght_register `basename "${BASH_SOURCE[0]}"`
 
 # GLobal variables
 declare -a __ght_cd_repos
-declare __ght_cd_alias
+__ght_cd_alias=""
 
 # Init function
 _ght_cd_init()
@@ -114,7 +114,7 @@ _ght_cd_main()
 		esac
 	done
 	return 0
-}		
+}
 
 # Completion function
 _git_ght_cd()

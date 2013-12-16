@@ -33,7 +33,6 @@ function _ght_gitupd() {
 	ind=1
 	while read branch
 	do
-	
 		echo -e "\e[01mBranch :\e[0m \e[44m$branch\e[0m \e[41m($ind/$lines)\e[0m"
 		git checkout $branch &> /dev/null
 		ec=$?

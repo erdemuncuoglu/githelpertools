@@ -22,7 +22,7 @@
 ###########################################################################
 
 
-__ght_self_dir=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd`
+export __ght_self_dir=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd`
 
 [ -f "$__ght_self_dir/lib/base.sh" ] && . "$__ght_self_dir/lib/base.sh" || return 1
 
@@ -55,7 +55,7 @@ _ght_helper_loadextention()
 		_ght_log "Plugin : `basename "$user_extension"`"
 		source "$user_extension"
 	done <<<"$(find "$__ght_self_dir/plugins" -iname "*.sh" -print)"
-	
+
 	local core_extension
 	while IFS= read -d $'\n' -r core_extension && test -n "$core_extension"
 	do
@@ -80,7 +80,7 @@ _git_ght_helper()
 {
 	local cur
 	local public_args="-r --reload-conf"
-	
+
 	cur=${COMP_WORDS[COMP_CWORD]}
 
 	case "$cur" in
@@ -92,7 +92,6 @@ _git_ght_helper()
 		;;
 	esac
 	return 0
-		
 }
 
 
@@ -109,13 +108,19 @@ _ght_helper_loadextention
 
 echo
 
+while IFS= read -d $'\n' -r func_name
+do
+	func_name=${func_name##d* }
+	export -f $func_name
+done <<<"$(declare -F | egrep -e " _ght_.*")"
+
 git()
 {
 	local ec=127
 	local run_cmd=_ght_$1_main
 	local args="$*"
 
-	if [ "`type -t $run_cmd 2> /dev/null`" == "function" ]; then		
+	if [ "`type -t $run_cmd 2> /dev/null`" == "function" ]; then
 		shift
 		$run_cmd "$@"
 		ec=$?
@@ -123,6 +128,6 @@ git()
 	else
 		_ght_rungit "$@"
 		ec=$?
-	fi		
+	fi
 	return $ec;
 }

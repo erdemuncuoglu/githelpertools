@@ -23,7 +23,7 @@
 
 
 
-__ght_git_cmd=`type -fp git`
+export __ght_git_cmd=`type -fp git`
 if [ $? != 0 ]; then
 	echo "Cannot find GIT..."
 	return 2

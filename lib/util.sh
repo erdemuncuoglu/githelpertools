@@ -41,8 +41,8 @@ _ght_log()
 {
 	local filename
 	local rotate
-	
-	case $(_ght_getconfig logrotate) in
+
+	case `_ght_getconfig logrotate` in
 		monthly)
 			filename=`date +"%Y-%m"`-01.log;;
 		weekly)
@@ -50,7 +50,7 @@ _ght_log()
 		daily)
 			filename=`date +"%F"`.log;;
 		*)
-		filename=`_ght_getconfig logfile` || filename=githelper.log
+			filename=`_ght_getconfig logfile` || filename=githelper.log;;
 	esac
 	[[ "${filename:0:1}" != "/" && "${filename:0:1}" != "~" ]] && filename="$__ght_self_dir/log/$filename"
 	_ght_touch "$filename"
@@ -61,7 +61,7 @@ _ght_log()
 _ght_log_ec()
 {
 	local prefix
-	
+
 	if [ $1 -ge 0 ] 2> /dev/null; then
 	prefix="$1 :: "
 		shift
@@ -88,8 +88,8 @@ _ght_getconfig()
 	local ec
 
 	if [ -n "$key" ]; then
-		value=`"$__ght_git_cmd" config --global --get ght.$key 2> /dev/null`
-		
+		value=` "$__ght_git_cmd" config --global --get ght.$key 2> /dev/null`
+
 		[ $? -ne 0 -o -x "$value" ] && value='error'
 		if [ "$value" == "yes" ]; then
 			ec=0
@@ -106,12 +106,12 @@ _ght_getconfig()
 # Usage _ght_getremote
 _ght_getremote()
 {
-	local remote=$(_ght_getconfig remote)
-	
+	local remote=`_ght_getconfig remote`
+
 	if [ -z "$remote" ]; then
-		remote=$(git remote -v | grep -i -e "github" | head -1 | cut -d $'\t' -f 1)
+		remote=`git remote -v | grep -i -e "github" | head -1 | cut -d $'\t' -f 1`
 	fi
-	
+
 	[ -z "$remote" ] && return 1
 	echo $remote
 	return 0
@@ -132,7 +132,7 @@ _ght_nthparam()
 _ght_lastparam()
 {
 	local len=$#
-	
+
 	[ $len -eq 0 ] && return 1
 	while [ $len -gt 1 ]
 	do
@@ -144,12 +144,12 @@ _ght_lastparam()
 
 # Enhanced version of command touch
 # Try `touch --help' for more information.
-# Usage _ght_touch <args...> 
+# Usage _ght_touch <args...>
 _ght_touch()
 {
 	local params="$@"
 	local file=`_ght_lastparam "$@"`
-	
+
 	[ -e "$file" ] && return 1
 	touch "$@" &> /dev/null && return 0
 	_ght_mkdir "`dirname "$file"`"
@@ -162,7 +162,7 @@ _ght_touch()
 _ght_mkdir()
 {
 	local dir="$1"
-	
+
 	[ -z "$dir" -o "$dir" == "." -o "$dir" == "/" -o -e "$dir" ] && return 1
 	mkdir "$dir" &> /dev/null
 	[ $? -eq 0 ] && return 0
@@ -216,13 +216,13 @@ _ght_checkversion()
 	local branch="master"
 	local new_version
 	local ec
-	
+
 	if [[ x"$1" == x--verbose || x"$1" == x-v ]]; then
 		verbose="true"
 		shift
 	fi
 	[ -n "$1" ] && branch="$1"
-	
+
 	new_version=`_ght_geturl`
 	_ght_vercomp $__ght_version $new_version
 	ec=$?
@@ -234,7 +234,7 @@ _ght_checkversion()
 }
 
 # Downloads <url> to <file> or to stdout with wget or curl
-# Usage _ght_geturl url file
+# Usage _ght_geturl <url> <file>
 _ght_geturl()
 {
 	local ec
@@ -242,16 +242,17 @@ _ght_geturl()
 	local temp_file
 	local url
 	local out_file
-	
+
 	if [ -n "$1" ]; then
 		url="$1"
 		shift
 	else
 		url=`_ght_getconfig checkurl`
+		url=${url//%b/`_ght_getconfig updatebranch`}
 	fi
-	
+
 	[ -n "$1" ] && out_file="$1"
-	
+
 	for item in $temp_dir_list
 	do
 		if [ -d "$item" ]; then
@@ -276,17 +277,17 @@ _ght_geturl()
 		cat "$temp_file"
 		ec=$?
 	fi
-	
+
 	rm -f "$temp_file"
 	return $ec
 }
 
 # Registers core modules and user plugins
-# Usage _ght_register module_name
+# Usage _ght_register <module_name>
 _ght_register()
 {
 	local reg_name=${1%.*}
-	
+
 	"$__ght_git_cmd" config --unset-all alias.$reg_name 2> /dev/null
 	"$__ght_git_cmd" config --global alias.$reg_name ght_$reg_name
 	return 0
@@ -307,5 +308,30 @@ _ght_shelltype()
 	[ -z $1 ] && echo $os_type
 	[ "$1" == "$os_type" ]
 	return $?
+}
+
+# Local hook scripts
+# Call any function from hook associated with name
+_ght_hook_precommit()
+{
+	branch=`git rev-parse --abbrev-ref HEAD`
+	develbranch=`_ght_getconfig develbranch`
+	[ "$branch" != "$develbranch" ] && return 0
+
+	status=`git status --porcelain`
+	[ -z "$status" ] && return 1
+
+	file="$__ght_self_dir/VERSION"
+	ver=`cat $file`
+	[ $? -gt 0 ] && return 1
+
+	stable=${ver%.*}
+	devel=${ver##*.}
+	devel=$((devel + 1))
+	newver=$stable.$devel
+
+	echo $newver > $file
+	git add -A $file
+	return 0
 }
 
