@@ -40,11 +40,11 @@ if _ght_shelltype MINGW; then
 	bash_rc=~/.bashrc
 	temp_rc=~/temp.bashrc
 elif _ght_shelltype MAC; then
-	# TODO MAC OS implementation assigned to Mert KAYA
+	# TODO: MAC OS implementation assigned to Mert KAYA
 	# git_completion=/etc/git-completion.bash
 	# git_prompt=/etc/git-prompt.sh
 
-	# TODO on MAC use .profile instead .bashrc
+	# TODO: on MAC use .profile instead .bashrc
 	# bash_rc="$HOME/.bashrc"
 	# temp_rc="$HOME/temp.bashrc"
 	false
@@ -66,9 +66,9 @@ inst_line="source \"$__ght_self_dir/githelper.sh\" # $__ght_name v$__ght_version
 
 [ -e "$temp_rc" ] && rm -f $temp_rc
 [ ! -e "$bash_rc" ] && _ght_touch $bash_rc
-_ght_mkdir user
-_ght_mkdir plugins
-_ght_mkdir log
+_ght_mkdir "$__ght_self_dir/user"
+_ght_mkdir "$__ght_self_dir/plugins"
+_ght_mkdir "$__ght_self_dir/log"
 
 if [ -w "$bash_rc" ]; then
 	echo " * Updating '`basename "$bash_rc"`'"
@@ -88,10 +88,12 @@ if [ -w "$bash_rc" ]; then
 		[ "$ignore" == "false" ] && echo $line >> "$temp_rc"
 	done < "$bash_rc"
 
+	# TODO: what if MAC or else ?
 	if _ght_shelltype LINUX; then
 		echo 'source "'$git_completion'"' >> "$temp_rc"
 		echo 'source "'$git_prompt'"' >> "$temp_rc"
 	fi
+
 	echo $inst_line >> "$temp_rc"
 	mv -f "$temp_rc" "$bash_rc"
 
@@ -105,7 +107,7 @@ if [ -w "$bash_rc" ]; then
 
 			git config --global --unset-all alias.$alias_name
 			if [ "$alias_cmd" != "false" ]; then
-				git config --global alias.$alias_name "$alias_cmd" 
+				git config --global alias.$alias_name "$alias_cmd"
 				echo "    alias $alias_name = $alias_cmd"
 			fi
 		done < "$alias_file"

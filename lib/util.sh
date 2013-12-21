@@ -305,8 +305,7 @@ _ght_shelltype()
 	[ `uname -s | egrep -i "cygwin"` ] && os_type="CYGWIN"
 	[ `uname -s | egrep -i "uwin"` ] && os_type="UWIN"
 	[ `uname -s | egrep -i "darwin"` ] && os_type="MAC"
-	[ -z $1 ] && echo $os_type
-	[ "$1" == "$os_type" ]
+	[ -z $1 ] && echo $os_type || [ "$1" == "$os_type" ]
 	return $?
 }
 
