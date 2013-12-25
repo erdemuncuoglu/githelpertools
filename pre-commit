@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Sample pre-commit file to inlude into or replace pre-commit hook
+__ght_self_dir=`cd "$(git rev-parse --show-toplevel)" && pwd`
+ec=0
+if [ -x "$__ght_self_dir/pre-commit.sh" ]; then
+	"$__ght_self_dir/pre-commit.sh"
+	ec=$?
+fi
+
+exit $ec

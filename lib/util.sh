@@ -308,29 +308,3 @@ _ght_shelltype()
 	[ -z $1 ] && echo $os_type || [ "$1" == "$os_type" ]
 	return $?
 }
-
-# Local hook scripts
-# Call any function from hook associated with name
-_ght_hook_precommit()
-{
-	branch=`git rev-parse --abbrev-ref HEAD`
-	develbranch=`_ght_getconfig develbranch`
-	[ "$branch" != "$develbranch" ] && return 0
-
-	status=`git status --porcelain`
-	[ -z "$status" ] && return 1
-
-	file="$__ght_self_dir/VERSION"
-	ver=`cat $file`
-	[ $? -gt 0 ] && return 1
-
-	stable=${ver%.*}
-	devel=${ver##*.}
-	devel=$((devel + 1))
-	newver=$stable.$devel
-
-	echo $newver > $file
-	git add -A $file
-	return 0
-}
-
