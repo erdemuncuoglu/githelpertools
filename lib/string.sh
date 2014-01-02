@@ -24,7 +24,7 @@
 
 
 # Returns <list> element at zero based <index> delimited by <delimiter>
-# Usage _ght_split list index delimiter
+# Usage _ght_split <list> <index> <delimiter>
 _ght_split()
 {
 	local list
