@@ -28,6 +28,13 @@ _ght_register `basename "${BASH_SOURCE[0]}"`
 # Main function
 _ght_tug_main()
 {
+	local force="false"
+	local update="false"
+
+	if [[ "$1" == "-f" || "$1" == "--force" ]]; then
+		force="true"
+		shift
+	fi
 	[ -n "$1" ] && branches=$1 || branches=$(__git_heads)
 	[ -n "$2" ] && ref=$2 || ref=refs/remotes/$(_ght_getremote)/$(_ght_getconfig branch)
 
@@ -43,14 +50,18 @@ _ght_tug_main()
 
 		if [[ $ahead -gt 0 && $behind -gt 0 ]]; then
 			echo "${branch##*/} and ${ref##*remotes/} are diverged."
+			update="false"
 		elif [[ $ahead -gt 0 ]]; then
 			echo "${branch##*/} is ahead of ${ref##*remotes/} by ${ahead// } commit(s)."
+			update="false"
+			force="false"
 		elif [[ $behind -gt 0 ]]; then
-			git update-ref $branch $ref
+			update="true"
 		#else
 			#echo "${branch##*/} and ${ref##*remotes/} are same."
 		fi
 
+		[[ $fetch == "true" || $force == "true" ]] && git update-ref $branch $ref
 		#echo "branch : "$branch
 		#echo "ref    : "$ref
 	done
@@ -61,7 +72,22 @@ _ght_tug_main()
 # Completion function
 _git_ght_tug()
 {
-	[ $COMP_CWORD -eq 2 ] && __gitcomp_nl "$(__git_heads)"
-	[ $COMP_CWORD -eq 3 ] && __gitcomp_nl "$(__git_refs | grep '/')"
+	local cur
+	local prev
+	local public_args="-f --force"
+
+	cur=${COMP_WORDS[COMP_CWORD]}
+	prev=${COMP_WORDS[COMP_CWORD - 1]}
+
+	case "$prev" in
+		tug)
+			case "$cur" in
+				-*) __gitcomp "$public_args" ;;
+				*) __gitcomp_nl "$(__git_heads)" ;;
+			esac
+			;;
+		-*) __gitcomp_nl "$(__git_heads)" ;;
+		[^-]*) __gitcomp_nl "$(__git_refs | grep '/')" ;;
+	esac
 	return 0
 }
