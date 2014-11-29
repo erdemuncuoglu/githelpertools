@@ -152,23 +152,8 @@ _ght_touch()
 
 	[ -e "$file" ] && return 1
 	touch "$@" &> /dev/null && return 0
-	_ght_mkdir "`dirname "$file"`"
+	mkdir -p "`dirname "$file"`"
 	[ $? -eq 0 ] && touch "$@" || return 1
-	return $?
-}
-
-# Ehanced version of command mkdir
-# Usage _ght_mkdir dirname
-_ght_mkdir()
-{
-	local dir="$1"
-
-	[ -z "$dir" -o "$dir" == "." -o "$dir" == "/" -o -e "$dir" ] && return 1
-	mkdir "$dir" &> /dev/null
-	[ $? -eq 0 ] && return 0
-	_ght_mkdir "`dirname "$dir"`"
-	[ $? -ne 0 ] && return 1
-	mkdir "$dir"
 	return $?
 }
 
@@ -239,9 +224,12 @@ _ght_geturl()
 {
 	local ec
 	local temp_dir_list="/tmp $TMP $TEMP"
-	local temp_file
+	local tmp_std_out
+	local tmp_std_err=/dev/null
 	local url
 	local out_file
+	local timeout=5
+	local retry=2
 
 	if [ -n "$1" ]; then
 		url="$1"
@@ -256,29 +244,32 @@ _ght_geturl()
 	for item in $temp_dir_list
 	do
 		if [ -d "$item" ]; then
-			temp_file="$item/ght-`_ght_rndstr`"
+			tmp_std_out="$item/ght-`_ght_rndstr`"
+			tmp_std_err="$item/ght-`_ght_rndstr`"
 			break
 		fi
 	done
-	[ -z $temp_file ] && return 1
+	[ -z $tmp_std_out ] && return 1
 
 	if type -ft wget &> /dev/null; then
-		wget -qO $temp_file --no-check-certificate $url 2> /dev/null
+		wget -qO $tmp_std_out --timeout=$timeout --tries=$retry --no-check-certificate $url 2> $tmp_std_err
 	elif type -ft curl &> /dev/null; then
-		curl -so $temp_file --insecure $url 2> /dev/null
+		curl -so $tmp_std_out --connect-timeout $timeout --retry $retry --insecure $url 2> $tmp_std_err
 	else
 		return 1
 	fi
 
+	[ -n "`cat $tmp_std_err`" ] && _ght_log_core "`cat $tmp_std_err`"
+
 	if [[ -n "$out_file" && "$out_file" != "-" ]]; then
-		cp -f "$temp_file" "$out_file"
+		cp -f "$tmp_std_out" "$out_file" &> /dev/null
 		ec=$?
 	else
-		cat "$temp_file"
+		cat "$tmp_std_out" &> /dev/null
 		ec=$?
 	fi
 
-	rm -f "$temp_file"
+	rm -f "$tmp_std_out" "$_tmp_std_err" &> /dev/null
 	return $ec
 }
 

@@ -66,9 +66,9 @@ inst_line="source \"$__ght_self_dir/githelper.sh\" # $__ght_name v$__ght_version
 
 [ -e "$temp_rc" ] && rm -f $temp_rc
 [ ! -e "$bash_rc" ] && _ght_touch $bash_rc
-_ght_mkdir "$__ght_self_dir/user"
-_ght_mkdir "$__ght_self_dir/plugins"
-_ght_mkdir "$__ght_self_dir/log"
+mkdir -p "$__ght_self_dir/user"
+mkdir -p "$__ght_self_dir/plugins"
+mkdir -p "$__ght_self_dir/log"
 
 if [ -w "$bash_rc" ]; then
 	echo " * Updating '`basename "$bash_rc"`'"
@@ -89,10 +89,10 @@ if [ -w "$bash_rc" ]; then
 	done < "$bash_rc"
 
 	# TODO: what if MAC or else ?
-	if _ght_shelltype LINUX; then
-		echo 'source "'$git_completion'"' >> "$temp_rc"
-		echo 'source "'$git_prompt'"' >> "$temp_rc"
-	fi
+	#if _ght_shelltype LINUX; then
+	#	echo 'source "'$git_completion'"' >> "$temp_rc"
+	#	echo 'source "'$git_prompt'"' >> "$temp_rc"
+	#fi
 
 	echo $inst_line >> "$temp_rc"
 	mv -f "$temp_rc" "$bash_rc"
