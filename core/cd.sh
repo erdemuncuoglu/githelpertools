@@ -36,7 +36,7 @@ _ght_cd_init()
 	local repo_list=$__ght_self_dir/user
 	__ght_cd_alias=
 	unset __ght_cd_repos
-		
+
 	while read -r repo_file && [ -n "$repo_file" ]
 	do
 		_ght_log_core "cd :: `basename "$repo_file"`"
@@ -72,12 +72,12 @@ _ght_cd_main()
 	local oldIFS="$IFS"
 	local fetch="false"
 	local alias repo repo_line
-	
+
 	if [ $# -eq 0 ]; then
 		pwd
 		return $?
 	fi
-	
+
 	case $1 in
 	-r|--refresh)
 		_ght_cd_init
@@ -88,21 +88,22 @@ _ght_cd_main()
 		shift
 		;;
 	esac
-	
+
 	for repo_line in "${__ght_cd_repos[@]}"
 	do
 		alias=`_ght_split "$repo_line" 0`
 		repo=`_ght_split "$repo_line" 1`
-		
+
 		case "$1" in
-		--list|-l)
+		--list|-l|-L)
 			IFS="■"
 			if [ "$repo_line" == "${__ght_cd_repos[0]}" ]; then
 				echo
 				echo -e "    "`_ght_rpad Alias 12`"  Repository"
-				echo -e "    "`_ght_repeat 12 -`"  "`_ght_repeat 16 -`
+				echo -e "    "`_ght_repeat 12 -`"  "`_ght_repeat 24 -`
 			fi
-			echo -e "    "`_ght_rpad "$alias" 12`"  "`basename "$repo"`
+			[ "$1" = "-L" ] && repo=`dirname "$repo"`/`basename "$repo"` || repo=`basename "$repo"`
+			echo -e "    "`_ght_rpad "$alias" 12`"  "$repo
 			IFS="$oldIFS"
 			continue
 			;;
@@ -122,12 +123,12 @@ _git_ght_cd()
 	local cur
 	local prev
 	local public_args="-l --list -r --refresh -f --fetch"
-	
+
 	cur=${COMP_WORDS[COMP_CWORD]}
 	prev=${COMP_WORDS[COMP_CWORD - 1]}
 
 	[ -z "$__ght_cd_alias" ] && __ght_cd_alias="$public_args"
-	
+
 	if [ $prev == "-f" -o $prev == "--fetch" ]; then
 		__gitcomp "$__ght_cd_alias"
 	elif [ $prev == "cd" ]; then
