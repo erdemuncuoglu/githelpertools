@@ -22,7 +22,6 @@
 ###########################################################################
 
 
-__ght_self_dir=`cd "$(git rev-parse --show-toplevel)" && pwd`
 [ -f "$__ght_self_dir/lib/base.sh" ] && . "$__ght_self_dir/lib/base.sh" || exit 0
 cd "$__ght_self_dir"
 
