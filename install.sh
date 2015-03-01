@@ -34,6 +34,9 @@ __ght_self_dir=`cd "$(dirname "${BASH_SOURCE[0]}")" && pwd`
 
 [ x"$1" == x--update ] && echo " * Updating to v$__ght_version" || echo " * Installing $__ght_name v$__ght_version"
 
+git_completion=""
+git_prompt=""
+
 if _ght_shelltype MINGW; then
 	git_completion=/etc/git-completion.bash
 	git_prompt=/etc/git-prompt.sh
@@ -49,18 +52,19 @@ elif _ght_shelltype MAC; then
 	# temp_rc="$HOME/temp.bashrc"
 	false
 elif _ght_shelltype LINUX; then
-	git_completion=~/.git-completion.sh
-	git_prompt=~/.git-prompt.sh
+	# git_completion=~/.git-completion.sh
+	# git_prompt=~/.git-prompt.sh
 	bash_rc=~/.bashrc
 	temp_rc=~/temp.bashrc
 else
 	echo "new shell : "`_ght_shelltype`
-	exit 1
 fi
 
-echo " * Downloading 'git-prompt.sh' and 'git-completion.bash'"
-_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh "$git_completion"
-_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-completion.bash "$git_prompt"
+if [ -n "$git_completion" ]; then
+	echo " * Downloading 'git-prompt.sh' and 'git-completion.bash'"
+	_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-prompt.sh "$git_completion"
+	_ght_geturl https://raw.github.com/git/git/master/contrib/completion/git-completion.bash "$git_prompt"
+fi
 
 inst_line="source \"$__ght_self_dir/githelper.sh\" # $__ght_name v$__ght_version"
 
