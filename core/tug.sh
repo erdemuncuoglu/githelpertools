@@ -61,7 +61,7 @@ _ght_tug_main()
 			#echo "${branch##*/} and ${ref##*remotes/} are same."
 		fi
 
-		[[ $fetch == "true" || $force == "true" ]] && git update-ref $branch $ref
+		[[ $update == "true" || $force == "true" ]] && git update-ref $branch $ref
 		#echo "branch : "$branch
 		#echo "ref    : "$ref
 	done
