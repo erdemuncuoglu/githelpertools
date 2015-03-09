@@ -52,7 +52,7 @@ _ght_helper_loadextention()
 	local user_extension
 	while IFS= read -d $'\n' -r user_extension && test -n "$user_extension"
 	do
-		_ght_log "Plugin : `basename "$user_extension"`"
+		_ght_log_user `basename "$user_extension"`
 		source "$user_extension"
 	done <<<"$(find "$__ght_self_dir/plugins" -iname "*.sh" -print)"
 
@@ -124,7 +124,7 @@ git()
 		shift
 		$run_cmd "$@"
 		ec=$?
-		_ght_log $ec $args
+		_ght_log_ec $ec $args
 	else
 		_ght_rungit "$@"
 		ec=$?

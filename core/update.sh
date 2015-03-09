@@ -40,8 +40,8 @@ _ght_update_main()
 	(
 		cd "$__ght_self_dir"
 		"$__ght_git_cmd" fetch $remote
-		[ "$update" == reset ] && "$__ght_git_cmd" reset --hard $remote/$branch
-		[ "$update" == pull ] && "$__ght_git_cmd" pull $remote $branch
+		[ "$update" == "reset" ] && "$__ght_git_cmd" reset --hard $remote/$branch
+		[ "$update" == "pull" ] && "$__ght_git_cmd" pull $remote $branch
 	)
 	if [ -x "$__ght_self_dir/install.sh" ]; then
 		"$__ght_self_dir/install.sh" --update && exec bash -l

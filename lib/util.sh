@@ -28,7 +28,7 @@ _ght_rungit()
 {
 	"$__ght_git_cmd" "$@"
 	ec=$?
-	_ght_log $ec "$@"
+	_ght_log_ec $ec "$@"
 	return $ec
 }
 
@@ -60,13 +60,13 @@ _ght_log()
 
 _ght_log_ec()
 {
-	local prefix
+	local ec
 
 	if [ $1 -ge 0 ] 2> /dev/null; then
-	prefix="$1 :: "
+		ec="$1"
 		shift
 	fi
-	_ght_log "$prefix$*"
+	_ght_log "$ec :: $*"
 }
 
 _ght_log_user()
