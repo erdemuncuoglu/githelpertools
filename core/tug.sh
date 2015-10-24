@@ -54,14 +54,17 @@ _ght_tug_main()
 		elif [[ $ahead -gt 0 ]]; then
 			echo "${branch##*/} is ahead of ${ref##*remotes/} by ${ahead// } commit(s)."
 			update="false"
-			force="false"
+			#force="false"
 		elif [[ $behind -gt 0 ]]; then
 			update="true"
 		#else
 			#echo "${branch##*/} and ${ref##*remotes/} are same."
 		fi
 
-		[[ $update == "true" || $force == "true" ]] && git update-ref $branch $ref
+		if [[ $update == "true" || $force == "true" ]]; then
+		    git update-ref $branch $ref
+		    [[ $update == "false" && $force == "true" ]] && echo "force updated $branch to $ref"
+		fi
 		#echo "branch : "$branch
 		#echo "ref    : "$ref
 	done
